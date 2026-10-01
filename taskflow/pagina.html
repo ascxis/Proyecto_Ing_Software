@@ -678,6 +678,39 @@ const colorMap = {
   orange: { bg: 'bg-orange-500', light: 'bg-orange-100', text: 'text-orange-600', gradient: 'from-orange-500 to-orange-600' }
 };
 
+// ============ CONSTANTES Y AYUDANTES ============
+const STATUS = { PENDING: 'pending', PROGRESS: 'progress', COMPLETED: 'completed' };
+const PRIORITY = { HIGH: 'Alta', MEDIUM: 'Media', LOW: 'Baja' };
+const DAY_MS = 86400000;
+const PRIORITY_COLORS = {
+  [PRIORITY.HIGH]: 'bg-red-100 text-red-700',
+  [PRIORITY.MEDIUM]: 'bg-yellow-100 text-yellow-700',
+  [PRIORITY.LOW]: 'bg-green-100 text-green-700'
+};
+
+function getInitials(name) {
+  return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function findUser(id) {
+  return state.users.find(u => u.id === id);
+}
+
+function findProject(id) {
+  return state.projects.find(p => p.id === id);
+}
+
+function getCurrentProject() {
+  return findProject(state.currentProject);
+}
+
+function getProjectStats(projectId) {
+  const tasks = state.tasks.filter(t => t.projectId === projectId);
+  const completed = tasks.filter(t => t.status === STATUS.COMPLETED).length;
+  const pct = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
+  return { tasks, completed, pct };
+}
+
 // ============ STORAGE ============
 function save() {
   localStorage.setItem('taskflow_state', JSON.stringify({
@@ -711,20 +744,20 @@ function load() {
       { id: 'u3', name: 'Juan Miguel Beltrán', email: 'juan@taskflow.com', password: '1234', role: 'Diseñador' }
     ];
     state.projects = [
-      { id: 'p1', name: 'Sistema Web Universidad', desc: 'Plataforma de gestión académica para la Universidad de Pamplona', color: 'indigo', deadline: '2026-12-15', ownerId: 'u1', team: true, members: ['u1', 'u2', 'u3'], createdAt: Date.now() - 86400000 * 10 },
-      { id: 'p2', name: 'App Móvil de Tareas', desc: 'Aplicación móvil para gestión personal de tareas', color: 'purple', deadline: '2026-11-30', ownerId: 'u1', team: false, members: ['u1'], createdAt: Date.now() - 86400000 * 5 }
+      { id: 'p1', name: 'Sistema Web Universidad', desc: 'Plataforma de gestión académica para la Universidad de Pamplona', color: 'indigo', deadline: '2026-12-15', ownerId: 'u1', team: true, members: ['u1', 'u2', 'u3'], createdAt: Date.now() - DAY_MS * 10 },
+      { id: 'p2', name: 'App Móvil de Tareas', desc: 'Aplicación móvil para gestión personal de tareas', color: 'purple', deadline: '2026-11-30', ownerId: 'u1', team: false, members: ['u1'], createdAt: Date.now() - DAY_MS * 5 }
     ];
     state.tasks = [
-      { id: 't1', projectId: 'p1', title: 'Diseñar interfaz de login', desc: 'Crear mockups del módulo de autenticación', priority: 'Alta', status: 'completed', assigneeId: 'u3', deadline: '2026-10-01', createdAt: Date.now() - 86400000 * 8 },
-      { id: 't2', projectId: 'p1', title: 'Implementar base de datos', desc: 'Configurar PostgreSQL y crear esquemas', priority: 'Alta', status: 'progress', assigneeId: 'u2', deadline: '2026-10-15', createdAt: Date.now() - 86400000 * 6 },
-      { id: 't3', projectId: 'p1', title: 'Desarrollar módulo de proyectos', desc: 'CRUD completo de proyectos', priority: 'Media', status: 'pending', assigneeId: 'u2', deadline: '2026-10-25', createdAt: Date.now() - 86400000 * 4 },
-      { id: 't4', projectId: 'p1', title: 'Pruebas de usabilidad', desc: 'Realizar tests con usuarios reales', priority: 'Baja', status: 'pending', assigneeId: 'u1', deadline: '2026-11-10', createdAt: Date.now() - 86400000 * 2 },
-      { id: 't5', projectId: 'p2', title: 'Wireframes de la app', desc: 'Diseñar flujo principal de la aplicación móvil', priority: 'Alta', status: 'progress', assigneeId: 'u3', deadline: '2026-10-20', createdAt: Date.now() - 86400000 * 3 },
-      { id: 't6', projectId: 'p2', title: 'Configurar React Native', desc: 'Inicializar proyecto y dependencias', priority: 'Media', status: 'completed', assigneeId: 'u2', deadline: '2026-09-25', createdAt: Date.now() - 86400000 * 7 }
+      { id: 't1', projectId: 'p1', title: 'Diseñar interfaz de login', desc: 'Crear mockups del módulo de autenticación', priority: 'Alta', status: 'completed', assigneeId: 'u3', deadline: '2026-10-01', createdAt: Date.now() - DAY_MS * 8 },
+      { id: 't2', projectId: 'p1', title: 'Implementar base de datos', desc: 'Configurar PostgreSQL y crear esquemas', priority: 'Alta', status: 'progress', assigneeId: 'u2', deadline: '2026-10-15', createdAt: Date.now() - DAY_MS * 6 },
+      { id: 't3', projectId: 'p1', title: 'Desarrollar módulo de proyectos', desc: 'CRUD completo de proyectos', priority: 'Media', status: 'pending', assigneeId: 'u2', deadline: '2026-10-25', createdAt: Date.now() - DAY_MS * 4 },
+      { id: 't4', projectId: 'p1', title: 'Pruebas de usabilidad', desc: 'Realizar tests con usuarios reales', priority: 'Baja', status: 'pending', assigneeId: 'u1', deadline: '2026-11-10', createdAt: Date.now() - DAY_MS * 2 },
+      { id: 't5', projectId: 'p2', title: 'Wireframes de la app', desc: 'Diseñar flujo principal de la aplicación móvil', priority: 'Alta', status: 'progress', assigneeId: 'u3', deadline: '2026-10-20', createdAt: Date.now() - DAY_MS * 3 },
+      { id: 't6', projectId: 'p2', title: 'Configurar React Native', desc: 'Inicializar proyecto y dependencias', priority: 'Media', status: 'completed', assigneeId: 'u2', deadline: '2026-09-25', createdAt: Date.now() - DAY_MS * 7 }
     ];
     state.notifications = [
       { id: 'n1', type: 'task_assigned', message: 'Se te asignó la tarea "Diseñar interfaz de login"', time: Date.now() - 3600000, read: false },
-      { id: 'n2', type: 'project_created', message: 'Nuevo proyecto creado: Sistema Web Universidad', time: Date.now() - 86400000, read: false }
+      { id: 'n2', type: 'project_created', message: 'Nuevo proyecto creado: Sistema Web Universidad', time: Date.now() - DAY_MS, read: false }
     ];
     save();
   }
@@ -809,7 +842,7 @@ function enterApp() {
 
 function updateUserUI() {
   const u = state.currentUser;
-  const initials = u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+  const initials = getInitials(u.name);
   document.getElementById('userName').textContent = u.name;
   document.getElementById('userEmail').textContent = u.email;
   document.getElementById('userAvatar').textContent = initials;
@@ -852,25 +885,23 @@ function showView(view) {
 
 // ============ DASHBOARD ============
 function renderDashboard() {
-  const myProjects = state.projects;
-  const myTasks = state.tasks;
-  const completed = myTasks.filter(t => t.status === 'completed').length;
-  const pending = myTasks.filter(t => t.status !== 'completed').length;
+  const allProjects = state.projects;
+  const allTasks = state.tasks;
+  const completed = allTasks.filter(t => t.status === STATUS.COMPLETED).length;
+  const pending = allTasks.filter(t => t.status !== STATUS.COMPLETED).length;
 
-  document.getElementById('statProjects').textContent = myProjects.length;
-  document.getElementById('statTasks').textContent = myTasks.length;
+  document.getElementById('statProjects').textContent = allProjects.length;
+  document.getElementById('statTasks').textContent = allTasks.length;
   document.getElementById('statCompleted').textContent = completed;
   document.getElementById('statPending').textContent = pending;
 
   // Projects progress
   const pp = document.getElementById('projectsProgress');
-  if (myProjects.length === 0) {
+  if (allProjects.length === 0) {
     pp.innerHTML = '<p class="text-gray-500 text-center py-8">No hay proyectos aún. ¡Crea uno!</p>';
   } else {
-    pp.innerHTML = myProjects.map(p => {
-      const pTasks = state.tasks.filter(t => t.projectId === p.id);
-      const pCompleted = pTasks.filter(t => t.status === 'completed').length;
-      const pct = pTasks.length ? Math.round((pCompleted / pTasks.length) * 100) : 0;
+    pp.innerHTML = allProjects.map(p => {
+      const { tasks: pTasks, completed: pCompleted, pct } = getProjectStats(p.id);
       const c = colorMap[p.color];
       return `
         <div class="p-4 border border-gray-100 rounded-xl hover:border-indigo-200 cursor-pointer transition" onclick="openProjectDetail('${p.id}')">
@@ -948,9 +979,7 @@ function renderProjects() {
 }
 
 function renderProjectCard(p) {
-  const pTasks = state.tasks.filter(t => t.projectId === p.id);
-  const pCompleted = pTasks.filter(t => t.status === 'completed').length;
-  const pct = pTasks.length ? Math.round((pCompleted / pTasks.length) * 100) : 0;
+  const { tasks: pTasks, completed: pCompleted, pct } = getProjectStats(p.id);
   const c = colorMap[p.color];
   const teamBadge = p.team && p.members
     ? `<div class="flex items-center gap-1 mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
@@ -958,9 +987,9 @@ function renderProjectCard(p) {
         <span><b>${p.members.length}</b> participantes</span>
         <div class="flex -space-x-2 ml-auto">
           ${p.members.map(m => {
-            const u = state.users.find(x => x.id === m);
+            const u = findUser(m);
             if (!u) return '';
-            const initials = u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+            const initials = getInitials(u.name);
             return `<div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-[9px] font-bold ring-2 ring-white">${initials}</div>`;
           }).join('')}
         </div>
@@ -1011,7 +1040,7 @@ function openProjectModal(id = null) {
   selectColor('indigo');
   setProjectType(false);
   if (id) {
-    const p = state.projects.find(x => x.id === id);
+    const p = findProject(id);
     document.getElementById('projectModalTitle').textContent = 'Editar Proyecto';
     document.getElementById('projectId').value = p.id;
     document.getElementById('projectName').value = p.name;
@@ -1081,7 +1110,7 @@ document.getElementById('projectForm').addEventListener('submit', (e) => {
     members
   };
   if (id) {
-    const p = state.projects.find(x => x.id === id);
+    const p = findProject(id);
     Object.assign(p, data);
     showToast('Proyecto actualizado');
   } else {
@@ -1121,12 +1150,17 @@ function openProjectDetail(id) {
 }
 
 function renderProjectDetail() {
-  const p = state.projects.find(x => x.id === state.currentProject);
+  const p = getCurrentProject();
   if (!p) return;
+  const stats = getProjectStats(p.id);
+  renderProjectDetailHeader(p, stats);
+  renderProjectTeamPanel(p);
+  renderKanbanColumns(stats.tasks);
+}
+
+function renderProjectDetailHeader(p, stats) {
   const c = colorMap[p.color];
-  const pTasks = state.tasks.filter(t => t.projectId === p.id);
-  const pCompleted = pTasks.filter(t => t.status === 'completed').length;
-  const pct = pTasks.length ? Math.round((pCompleted / pTasks.length) * 100) : 0;
+  const { tasks: pTasks, completed: pCompleted, pct } = stats;
 
   document.getElementById('projectDetailHeader').innerHTML = `
     <div class="flex items-start justify-between">
@@ -1152,11 +1186,9 @@ function renderProjectDetail() {
       </div>
     </div>
   `;
+}
 
-  const pending = pTasks.filter(t => t.status === 'pending');
-  const progress = pTasks.filter(t => t.status === 'progress');
-  const completed = pTasks.filter(t => t.status === 'completed');
-
+function renderProjectTeamPanel(p) {
   // Team participants panel
   const teamPanel = document.getElementById('projectTeamPanel');
   if (p.team === true) {
@@ -1174,9 +1206,9 @@ function renderProjectDetail() {
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         ${(p.members || []).map(m => {
-          const u = state.users.find(x => x.id === m);
+          const u = findUser(m);
           if (!u) return '';
-          const initials = u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+          const initials = getInitials(u.name);
           return `
             <div class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl bg-gray-50">
               <div class="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">${initials}</div>
@@ -1199,6 +1231,12 @@ function renderProjectDetail() {
     teamPanel.classList.add('hidden');
     teamPanel.innerHTML = '';
   }
+}
+
+function renderKanbanColumns(pTasks) {
+  const pending = pTasks.filter(t => t.status === STATUS.PENDING);
+  const progress = pTasks.filter(t => t.status === STATUS.PROGRESS);
+  const completed = pTasks.filter(t => t.status === STATUS.COMPLETED);
 
   document.getElementById('countPending').textContent = pending.length;
   document.getElementById('countProgress').textContent = progress.length;
@@ -1214,18 +1252,13 @@ function emptyCol(msg) {
 }
 
 function renderTaskCard(t) {
-  const assignee = state.users.find(u => u.id === t.assigneeId);
-  const priorityColors = {
-    'Alta': 'bg-red-100 text-red-700',
-    'Media': 'bg-yellow-100 text-yellow-700',
-    'Baja': 'bg-green-100 text-green-700'
-  };
-  const initials = assignee ? assignee.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : '?';
-  const isOverdue = t.deadline && new Date(t.deadline) < new Date() && t.status !== 'completed';
+  const assignee = findUser(t.assigneeId);
+  const initials = assignee ? getInitials(assignee.name) : '?';
+  const isOverdue = t.deadline && new Date(t.deadline) < new Date() && t.status !== STATUS.COMPLETED;
   return `
     <div class="task-card bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md" onclick="editTask('${t.id}')">
       <div class="flex items-start justify-between mb-2">
-        <span class="text-xs font-medium px-2 py-1 rounded-full ${priorityColors[t.priority]}">${t.priority}</span>
+        <span class="text-xs font-medium px-2 py-1 rounded-full ${PRIORITY_COLORS[t.priority]}">${t.priority}</span>
         <button onclick="event.stopPropagation(); deleteTask('${t.id}')" class="p-1 hover:bg-red-50 rounded">
           <svg class="w-4 h-4 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -1245,7 +1278,7 @@ function renderTaskCard(t) {
 
 // ============ PROJECT MEMBERS ============
 function openProjectMembersModal() {
-  const p = state.projects.find(x => x.id === state.currentProject);
+  const p = getCurrentProject();
   if (!p) return;
   document.getElementById('projectMembersModal').classList.remove('hidden');
   const sel = document.getElementById('projectMemberSelect');
@@ -1262,7 +1295,7 @@ function closeProjectMembersModal() {
 }
 
 function renderProjectMembersList() {
-  const p = state.projects.find(x => x.id === state.currentProject);
+  const p = getCurrentProject();
   if (!p) return;
   const list = document.getElementById('projectMembersList');
   const members = p.members || [];
@@ -1271,9 +1304,9 @@ function renderProjectMembersList() {
     return;
   }
   list.innerHTML = members.map(m => {
-    const u = state.users.find(x => x.id === m);
+    const u = findUser(m);
     if (!u) return '';
-    const initials = u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+    const initials = getInitials(u.name);
     return `
       <div class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl bg-gray-50">
         <div class="w-9 h-9 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">${initials}</div>
@@ -1291,7 +1324,7 @@ function renderProjectMembersList() {
 }
 
 function addProjectMember() {
-  const p = state.projects.find(x => x.id === state.currentProject);
+  const p = getCurrentProject();
   if (!p) return;
   const sel = document.getElementById('projectMemberSelect');
   const uid = sel.value;
@@ -1301,18 +1334,18 @@ function addProjectMember() {
     showToast('Este miembro ya está en el proyecto');
     return;
   }
-  const u = state.users.find(x => x.id === uid);
+  const u = findUser(uid);
   p.members.push(uid);
   save();
   renderProjectMembersList();
   renderProjectDetail();
-  const owner = state.users.find(x => x.id === p.ownerId);
+  const owner = findUser(p.ownerId);
   addNotification(`${u.name} añadido al proyecto ${p.name}${owner ? ` por ${owner.name}` : ''}`);
   showToast(`${u.name} añadido al proyecto`);
 }
 
 function removeProjectMember(uid) {
-  const p = state.projects.find(x => x.id === state.currentProject);
+  const p = getCurrentProject();
   if (!p) return;
   if (uid === p.ownerId) {
     showToast('No puedes eliminar al creador del proyecto');
@@ -1336,12 +1369,12 @@ function openTaskModal(id = null) {
   document.getElementById('taskForm').reset();
   document.getElementById('taskId').value = '';
   document.getElementById('taskModalTitle').textContent = 'Nueva Tarea';
-  document.getElementById('taskStatus').value = 'pending';
-  document.getElementById('taskPriority').value = 'Media';
+  document.getElementById('taskStatus').value = STATUS.PENDING;
+  document.getElementById('taskPriority').value = PRIORITY.MEDIUM;
 
   // Populate assignees
   const sel = document.getElementById('taskAssignee');
-  const p = state.projects.find(x => x.id === state.currentProject);
+  const p = getCurrentProject();
   const candidates = p && p.team === true && p.members
     ? state.users.filter(u => p.members.includes(u.id))
     : state.users;
@@ -1383,7 +1416,7 @@ document.getElementById('taskForm').addEventListener('submit', (e) => {
   } else {
     const newT = { id: 't' + Date.now(), ...data, createdAt: Date.now() };
     state.tasks.push(newT);
-    const assignee = state.users.find(u => u.id === data.assigneeId);
+    const assignee = findUser(data.assigneeId);
     if (assignee) {
       addNotification(`Tarea "${newT.title}" asignada a ${assignee.name}`);
     } else {
@@ -1419,11 +1452,10 @@ function renderAllTasks() {
   }
   const statusLabels = { pending: 'Pendiente', progress: 'En Progreso', completed: 'Completado' };
   const statusColors = { pending: 'bg-gray-100 text-gray-700', progress: 'bg-blue-100 text-blue-700', completed: 'bg-green-100 text-green-700' };
-  const priorityColors = { 'Alta': 'bg-red-100 text-red-700', 'Media': 'bg-yellow-100 text-yellow-700', 'Baja': 'bg-green-100 text-green-700' };
 
   list.innerHTML = state.tasks.map(t => {
-    const project = state.projects.find(p => p.id === t.projectId);
-    const assignee = state.users.find(u => u.id === t.assigneeId);
+    const project = findProject(t.projectId);
+    const assignee = findUser(t.assigneeId);
     return `
       <tr class="border-b border-gray-100 hover:bg-gray-50">
         <td class="py-4">
@@ -1432,7 +1464,7 @@ function renderAllTasks() {
         </td>
         <td class="py-4 text-sm text-gray-600">${project ? project.name : '-'}</td>
         <td class="py-4 text-sm text-gray-600">${assignee ? assignee.name : 'Sin asignar'}</td>
-        <td class="py-4"><span class="text-xs font-medium px-2 py-1 rounded-full ${priorityColors[t.priority]}">${t.priority}</span></td>
+        <td class="py-4"><span class="text-xs font-medium px-2 py-1 rounded-full ${PRIORITY_COLORS[t.priority]}">${t.priority}</span></td>
         <td class="py-4"><span class="text-xs font-medium px-2 py-1 rounded-full ${statusColors[t.status]}">${statusLabels[t.status]}</span></td>
         <td class="py-4 text-sm text-gray-600">${t.deadline ? formatDate(t.deadline) : '-'}</td>
         <td class="py-4">
@@ -1480,8 +1512,8 @@ function buildTicks(min, max, mode) {
     ticks.push({ pct: (cur.getTime() - min.getTime()) / (max.getTime() - min.getTime()) * 100, date: new Date(cur) });
     guard++;
     if (mode === 'month') cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
-    else if (mode === 'week') cur = new Date(cur.getTime() + 7 * 86400000);
-    else cur = new Date(cur.getTime() + 86400000);
+    else if (mode === 'week') cur = new Date(cur.getTime() + 7 * DAY_MS);
+    else cur = new Date(cur.getTime() + DAY_MS);
   }
   return ticks.filter(t => t.pct >= 0 && t.pct <= 100);
 }
@@ -1507,9 +1539,7 @@ function shortDate(d) {
 }
 
 function priorityDot(p) {
-  if (p === 'Alta') return '';
-  if (p === 'Baja') return 'bg-green-500';
-  return '';
+  return p === PRIORITY.LOW ? 'bg-green-500' : '';
 }
 
 function todayLine(pct) {
@@ -1517,18 +1547,16 @@ function todayLine(pct) {
   return '<div class="absolute top-0 bottom-0 w-0.5 bg-red-500 opacity-70 z-10" style="left:' + pct + '%"></div>';
 }
 
-function renderChronogram() {
-  applyChronogramModeUI();
-  const mode = state.chronogramMode || 'month';
+function buildChronogramTaskItems() {
   const projectMap = {};
   state.projects.forEach(p => { projectMap[p.id] = p; });
 
-  const items = state.tasks.map(t => {
+  return state.tasks.map(t => {
     const proj = projectMap[t.projectId];
     let start = t.createdAt ? new Date(t.createdAt) : (t.deadline ? new Date(t.deadline) : new Date());
     const projStart = proj && proj.createdAt ? new Date(proj.createdAt) : null;
     if (projStart && start.getTime() < projStart.getTime()) start = new Date(projStart);
-    let end = t.deadline ? new Date(t.deadline) : new Date(start.getTime() + 3 * 86400000);
+    let end = t.deadline ? new Date(t.deadline) : new Date(start.getTime() + 3 * DAY_MS);
     if (end.getTime() < start.getTime()) end = new Date(start);
     return {
       id: t.id,
@@ -1542,44 +1570,29 @@ function renderChronogram() {
       priority: t.priority
     };
   });
+}
 
-  const root = document.getElementById('chronogram');
-  if (!root) return;
-  if (items.length === 0) {
-    root.innerHTML = '<div class="text-center py-16 text-gray-500">No hay tareas para mostrar en el cronograma</div>';
-    return;
-  }
-
-  const projItems = state.projects.map(p => {
+function buildChronogramProjectItems() {
+  return state.projects.map(p => {
     const start = p.createdAt ? new Date(p.createdAt) : (p.deadline ? new Date(p.deadline) : new Date());
     let end = p.deadline ? new Date(p.deadline) : new Date();
     if (end.getTime() < start.getTime()) end = new Date(start);
     return { id: p.id, name: p.name, color: p.color, start, end, hasEnd: !!p.deadline };
   });
+}
 
-  const now = new Date();
+function getChronogramRange(items, projItems, now) {
   let min = new Date(now), max = new Date(now);
-  items.forEach(it => {
+  [...items, ...projItems].forEach(it => {
     if (it.start.getTime() < min.getTime()) min = new Date(it.start);
     if (it.end.getTime() > max.getTime()) max = new Date(it.end);
   });
-  projItems.forEach(it => {
-    if (it.start.getTime() < min.getTime()) min = new Date(it.start);
-    if (it.end.getTime() > max.getTime()) max = new Date(it.end);
-  });
-  min.setTime(min.getTime() - 2 * 86400000);
-  max.setTime(max.getTime() + 2 * 86400000);
-  const span = max.getTime() - min.getTime();
+  min.setTime(min.getTime() - 2 * DAY_MS);
+  max.setTime(max.getTime() + 2 * DAY_MS);
+  return { min, max };
+}
 
-  const ticks = thinTicks(buildTicks(min, max, mode), 26);
-  const labels = thinTicks(ticks, 14);
-  const pctOf = d => Math.min(100, Math.max(0, (d.getTime() - min.getTime()) / span * 100));
-  const todayPct = pctOf(now);
-
-  const groups = {};
-  items.forEach(it => { (groups[it.projectName] = groups[it.projectName] || []).push(it); });
-  const groupKeys = Object.keys(groups).sort();
-
+function renderChronogramHeader(ticks, labels, mode, todayPct) {
   let html = '';
   html += '<div class="flex items-stretch">';
   html += '<div class="w-64 sm:w-80 flex-shrink-0 px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tarea / Proyecto</div>';
@@ -1592,44 +1605,82 @@ function renderChronogram() {
   });
   html += todayLine(todayPct);
   html += '</div></div>';
+  return html;
+}
 
+function renderChronogramGroupHeader(pName, proj, groupItems, pctOf, todayPct) {
+  const pc = colorMap[groupItems[0].color] || colorMap.indigo;
+  const pLeft = proj ? pctOf(proj.start) : 0;
+  const pWidth = proj ? Math.max(pctOf(proj.end) - pLeft, 1.5) : 0;
+  const pTip = proj ? (proj.name + ' (proyecto) | ' + shortDate(proj.start) + ' a ' + (proj.hasEnd ? shortDate(proj.end) : 'sin fecha fin')) : '';
+  let html = '';
+  html += '<div class="flex items-stretch bg-gray-50 border-b border-gray-200">';
+  html += '<div class="w-64 sm:w-80 flex-shrink-0 px-4 py-2 flex items-center gap-2">';
+  html += '<span class="w-2.5 h-2.5 ' + pc.bg + ' rounded-full flex-shrink-0"></span>';
+  html += '<div class="flex flex-col min-w-0">';
+  html += '<span class="text-sm font-bold text-gray-700">' + pName + '</span>';
+  if (proj) html += '<span class="text-xs text-gray-400">' + shortDate(proj.start) + ' \u2192 ' + (proj.hasEnd ? shortDate(proj.end) : 'sin fecha') + '</span>';
+  html += '</div></div>';
+  html += '<div class="flex-1 relative h-8">' + todayLine(todayPct);
+  if (proj) html += '<div class="absolute top-1/2 -translate-y-1/2 h-4 ' + pc.bg + ' opacity-40 rounded-md" style="left:' + pLeft + '%;width:' + pWidth + '%;min-width:5px" title="' + pTip + '"></div>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderChronogramTaskRow(it, pctOf, todayPct, now) {
+  const c = colorMap[it.color] || colorMap.indigo;
+  const left = pctOf(it.start);
+  const width = Math.max(pctOf(it.end) - left, 1.5);
+  const overdue = it.end.getTime() < now.getTime() && it.status !== STATUS.COMPLETED;
+  const tip = it.title + ' - ' + it.projectName + ' | ' + shortDate(it.start) + ' a ' + (it.hasEnd ? shortDate(it.end) : 'sin fecha fin') + ' | ' + (it.status || '');
+  let html = '';
+  html += '<div class="flex items-stretch border-b border-gray-100">';
+  html += '<div class="w-64 sm:w-80 flex-shrink-0 px-4 py-2 flex flex-col justify-center min-w-0">';
+  html += '<div class="flex items-center gap-2 min-w-0">';
+  if (it.priority) html += '<span class="w-3 h-3 rounded-full bg-yellow-400 flex-shrink-0 ' + priorityDot(it.priority) + '" title="Prioridad ' + it.priority + '"></span>';
+  html += '<p class="text-sm font-semibold text-gray-800">' + it.title + '</p></div>';
+  html += '<p class="text-xs text-gray-400">' + shortDate(it.start) + ' \u2192 ' + (it.hasEnd ? shortDate(it.end) : 'sin fecha') + '</p>';
+  html += '</div>';
+  html += '<div class="flex-1 relative h-12">';
+  html += todayLine(todayPct);
+  html += '<div class="absolute top-1/2 -translate-y-1/2 h-3 ' + c.bg + ' rounded-full opacity-90' + (overdue ? ' ring-2 ring-red-400' : '') + '" style="left:' + left + '%;width:' + width + '%;min-width:5px" title="' + tip + '"></div>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderChronogram() {
+  applyChronogramModeUI();
+  const mode = state.chronogramMode || 'month';
+  const items = buildChronogramTaskItems();
+
+  const root = document.getElementById('chronogram');
+  if (!root) return;
+  if (items.length === 0) {
+    root.innerHTML = '<div class="text-center py-16 text-gray-500">No hay tareas para mostrar en el cronograma</div>';
+    return;
+  }
+
+  const projItems = buildChronogramProjectItems();
+  const now = new Date();
+  const { min, max } = getChronogramRange(items, projItems, now);
+  const span = max.getTime() - min.getTime();
+
+  const ticks = thinTicks(buildTicks(min, max, mode), 26);
+  const labels = thinTicks(ticks, 14);
+  const pctOf = d => Math.min(100, Math.max(0, (d.getTime() - min.getTime()) / span * 100));
+  const todayPct = pctOf(now);
+
+  const groups = {};
+  items.forEach(it => { (groups[it.projectName] = groups[it.projectName] || []).push(it); });
+  const groupKeys = Object.keys(groups).sort();
   const projMap = {};
   projItems.forEach(p => { projMap[p.name] = p; });
 
+  let html = renderChronogramHeader(ticks, labels, mode, todayPct);
   groupKeys.forEach(pName => {
-    const pc = colorMap[groups[pName][0].color] || colorMap.indigo;
-    const proj = projMap[pName];
-    const pLeft = proj ? pctOf(proj.start) : 0;
-    const pWidth = proj ? Math.max(pctOf(proj.end) - pLeft, 1.5) : 0;
-    const pTip = proj ? (proj.name + ' (proyecto) | ' + shortDate(proj.start) + ' a ' + (proj.hasEnd ? shortDate(proj.end) : 'sin fecha fin')) : '';
-    html += '<div class="flex items-stretch bg-gray-50 border-b border-gray-200">';
-    html += '<div class="w-64 sm:w-80 flex-shrink-0 px-4 py-2 flex items-center gap-2">';
-    html += '<span class="w-2.5 h-2.5 ' + pc.bg + ' rounded-full flex-shrink-0"></span>';
-    html += '<div class="flex flex-col min-w-0">';
-    html += '<span class="text-sm font-bold text-gray-700">' + pName + '</span>';
-    if (proj) html += '<span class="text-xs text-gray-400">' + shortDate(proj.start) + ' \u2192 ' + (proj.hasEnd ? shortDate(proj.end) : 'sin fecha') + '</span>';
-    html += '</div></div>';
-    html += '<div class="flex-1 relative h-8">' + todayLine(todayPct);
-    if (proj) html += '<div class="absolute top-1/2 -translate-y-1/2 h-4 ' + pc.bg + ' opacity-40 rounded-md" style="left:' + pLeft + '%;width:' + pWidth + '%;min-width:5px" title="' + pTip + '"></div>';
-    html += '</div></div>';
-
+    html += renderChronogramGroupHeader(pName, projMap[pName], groups[pName], pctOf, todayPct);
     groups[pName].forEach(it => {
-      const c = colorMap[it.color] || colorMap.indigo;
-      const left = pctOf(it.start);
-      const width = Math.max(pctOf(it.end) - left, 1.5);
-      const overdue = it.end.getTime() < now.getTime() && it.status !== 'completed';
-      const tip = it.title + ' - ' + it.projectName + ' | ' + shortDate(it.start) + ' a ' + (it.hasEnd ? shortDate(it.end) : 'sin fecha fin') + ' | ' + (it.status || '');
-      html += '<div class="flex items-stretch border-b border-gray-100">';
-      html += '<div class="w-64 sm:w-80 flex-shrink-0 px-4 py-2 flex flex-col justify-center min-w-0">';
-      html += '<div class="flex items-center gap-2 min-w-0">';
-      if (it.priority) html += '<span class="w-3 h-3 rounded-full bg-yellow-400 flex-shrink-0 ' + priorityDot(it.priority) + '" title="Prioridad ' + it.priority + '"></span>';
-      html += '<p class="text-sm font-semibold text-gray-800">' + it.title + '</p></div>';
-      html += '<p class="text-xs text-gray-400">' + shortDate(it.start) + ' \u2192 ' + (it.hasEnd ? shortDate(it.end) : 'sin fecha') + '</p>';
-      html += '</div>';
-      html += '<div class="flex-1 relative h-12">';
-      html += todayLine(todayPct);
-      html += '<div class="absolute top-1/2 -translate-y-1/2 h-3 ' + c.bg + ' rounded-full opacity-90' + (overdue ? ' ring-2 ring-red-400' : '') + '" style="left:' + left + '%;width:' + width + '%;min-width:5px" title="' + tip + '"></div>';
-      html += '</div></div>';
+      html += renderChronogramTaskRow(it, pctOf, todayPct, now);
     });
   });
 
@@ -1661,30 +1712,39 @@ function renderTeam() {
     + shared.map(p => `<option value="${p.id}">${p.name} (${memberCount(p)})</option>`).join('');
   sel.value = state.teamFilterProject || '';
 
+  const visible = getVisibleTeamMembers(unassigned);
+  const cards = visible.map(renderTeamCard).join('');
+  const extra = renderTeamEmptyState(visible);
+  list.innerHTML = cards + extra;
+}
+
+function getVisibleTeamMembers(unassigned) {
   let visible;
   if (state.teamFilterProject === '__none__') {
     visible = unassigned;
   } else if (state.teamFilterProject) {
-    const proj = state.projects.find(p => p.id === state.teamFilterProject);
+    const proj = findProject(state.teamFilterProject);
     visible = proj && proj.members ? state.users.filter(u => proj.members.includes(u.id)) : [];
   } else {
     visible = getTeamColleagues();
   }
+  return visible;
+}
 
-  const cards = visible.map(u => {
-    const initials = u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-    const taskCount = state.tasks.filter(t => t.assigneeId === u.id).length;
-    const completedCount = state.tasks.filter(t => t.assigneeId === u.id && t.status === 'completed').length;
-    const colors = ['from-indigo-400 to-purple-500', 'from-pink-400 to-red-500', 'from-green-400 to-teal-500', 'from-orange-400 to-yellow-500', 'from-blue-400 to-cyan-500'];
-    const color = colors[state.users.indexOf(u) % colors.length];
-    const userProjects = state.projects.filter(p => p.team === true && p.members && p.members.includes(u.id));
-    const projectChips = userProjects.length === 0
-      ? '<span class="text-xs text-gray-400">Ninguno</span>'
-      : userProjects.slice(0, 3).map(p => {
-          const c = colorMap[p.color];
-          return `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${c.light} ${c.text} truncate max-w-[9rem]">${p.name}</span>`;
-        }).join('') + (userProjects.length > 3 ? `<span class="text-[10px] text-gray-400">+${userProjects.length - 3}</span>` : '');
-    return `
+function renderTeamCard(u) {
+  const initials = getInitials(u.name);
+  const taskCount = state.tasks.filter(t => t.assigneeId === u.id).length;
+  const completedCount = state.tasks.filter(t => t.assigneeId === u.id && t.status === STATUS.COMPLETED).length;
+  const colors = ['from-indigo-400 to-purple-500', 'from-pink-400 to-red-500', 'from-green-400 to-teal-500', 'from-orange-400 to-yellow-500', 'from-blue-400 to-cyan-500'];
+  const color = colors[state.users.indexOf(u) % colors.length];
+  const userProjects = state.projects.filter(p => p.team === true && p.members && p.members.includes(u.id));
+  const projectChips = userProjects.length === 0
+    ? '<span class="text-xs text-gray-400">Ninguno</span>'
+    : userProjects.slice(0, 3).map(p => {
+        const c = colorMap[p.color];
+        return `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${c.light} ${c.text} truncate max-w-[9rem]">${p.name}</span>`;
+      }).join('') + (userProjects.length > 3 ? `<span class="text-[10px] text-gray-400">+${userProjects.length - 3}</span>` : '');
+  return `
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover">
         <div class="flex items-center gap-4 mb-4">
           <div class="w-14 h-14 bg-gradient-to-br ${color} rounded-full flex items-center justify-center text-white font-bold text-lg">${initials}</div>
@@ -1722,8 +1782,9 @@ function renderTeam() {
         </button>
       </div>
     `;
-  }).join('');
+}
 
+function renderTeamEmptyState(visible) {
   let extra = '';
   if (visible.length === 0) {
     const msg = state.teamFilterProject === '__none__' ? 'No hay usuarios sin proyecto' : 'Sin miembros para este filtro';
@@ -1737,7 +1798,7 @@ function renderTeam() {
       <button onclick="showView('projects')" class="mt-3 text-indigo-600 font-semibold hover:underline">Ir a proyectos</button>
     </div>`;
   }
-  list.innerHTML = cards + extra;
+  return extra;
 }
 
 function filterTeamByProject(val) {
@@ -1746,7 +1807,7 @@ function filterTeamByProject(val) {
 }
 
 function openEditMemberProfile(id) {
-  const u = state.users.find(x => x.id === id);
+  const u = findUser(id);
   if (!u) return;
   document.getElementById('editMemberId').value = id;
   document.getElementById('editMemberName').textContent = u.email;
@@ -1771,7 +1832,7 @@ function closeEditProfileModal() {
 
 function saveEditMemberProfile() {
   const id = document.getElementById('editMemberId').value;
-  const u = state.users.find(x => x.id === id);
+  const u = findUser(id);
   if (!u) return;
   u.role = document.getElementById('editMemberRole').value;
   const checked = [...document.querySelectorAll('#editMemberProjects input:checked')].map(c => c.value);
@@ -1800,7 +1861,7 @@ function saveEditMemberProfile() {
 
 function deleteTeamMember(id) {
   if (!confirm('¿Eliminar este miembro del equipo?')) return;
-  const u = state.users.find(x => x.id === id);
+  const u = findUser(id);
   state.users = state.users.filter(x => x.id !== id);
   state.projects.forEach(p => {
     if (p.members) p.members = p.members.filter(m => m !== id);
