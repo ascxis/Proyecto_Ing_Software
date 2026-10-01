@@ -2,6 +2,10 @@
 
 Prototipo front-end del proyecto integrador de Ingeniería de Software I (Universidad de Pamplona).
 
+# TaskFlow - Sistema de Gestión de Tareas
+
+Prototipo front-end del proyecto integrador de Ingeniería de Software I (Universidad de Pamplona).
+
 ## Estado
 
 Versión v0.1.0 - primer release del MVP: prototipo front-end sin backend.
@@ -11,3 +15,11 @@ La deuda técnica está registrada en los issues con la etiqueta deuda-tecnica (
 
 - taskflow/: la aplicación (pagina.html).
 - pruebas/: pruebas de caracterización y métricas.
+
+## Cómo ejecutar las pruebas
+
+Requisitos: Node.js 18 o superior. Desde la raíz del repositorio:
+
+    node pruebas/snapshot_test.js taskflow/pagina.html --comparar taskflow/base.json
+
+El resultado esperado termina en: Resultado: OK (37 pasos idénticos)
