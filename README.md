@@ -23,3 +23,11 @@ Requisitos: Node.js 18 o superior. Desde la raíz del repositorio:
     node pruebas/snapshot_test.js taskflow/pagina.html --comparar taskflow/base.json
 
 El resultado esperado termina en: Resultado: OK (37 pasos idénticos)
+
+   ## Pruebas unitarias y de caja negra
+
+   Requisitos: Node.js 20 o superior. Desde la raíz del repositorio:
+
+       node --test pruebas/unitarias.test.js pruebas/caja_negra.test.js
+
+   Resultado esperado: 64 pruebas, 63 pasan y 1 está pendiente (defecto D1, issue #12).
