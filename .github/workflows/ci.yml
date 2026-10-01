@@ -1,0 +1,46 @@
+name: CI
+
+# Se ejecuta en cada Pull Request hacia main y en cada fusión a main.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Mínimo privilegio: el pipeline solo lee el repositorio. No usa secretos.
+permissions:
+  contents: read
+
+# Si llega un commit nuevo a la misma rama, cancela la ejecución anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Build, Lint y Pruebas
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build (el HTML carga y su JavaScript es válido)
+        run: node pruebas/build.js taskflow/pagina.html
+
+      - name: Lint (reglas estáticas y búsqueda de secretos)
+        run: node pruebas/lint.js taskflow/pagina.html
+
+      - name: Pruebas unitarias y de caja negra
+        run: node --test pruebas/unitarias.test.js pruebas/caja_negra.test.js
+
+      - name: Regresión visual (snapshot de 37 pasos)
+        run: |
+          BASE=$(find . -name base.json -not -path './node_modules/*' | head -n 1)
+          test -n "$BASE" || { echo "No se encontró base.json"; exit 1; }
+          node pruebas/snapshot_test.js taskflow/pagina.html --comparar "$BASE"
