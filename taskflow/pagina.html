@@ -1909,7 +1909,7 @@ function addNotification(message) {
     time: Date.now(),
     read: false
   });
-  if (state.notifications.length > 20) state.notifications = state.notifications.slice(0, 20);
+  if (state.notifications.length > 25) state.notifications = state.notifications.slice(0, 20);
   save();
   updateNotifBadge();
 }
