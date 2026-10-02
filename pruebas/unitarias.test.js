@@ -14,8 +14,11 @@ describe('getInitials (sin dobles: función pura)', () => {
   test('dos palabras -> dos iniciales en mayúscula', () => assert.equal(ini('juan beltrán'), 'JB'));
   test('una palabra -> una inicial', () => assert.equal(ini('Administrador'), 'A'));
   test('tres palabras -> solo las dos primeras', () => assert.equal(ini('Ronald Alexander Sandoval'), 'RA'));
-  // DEFECTO D1: con dos espacios seguidos el segundo "nombre" es vacío y se pierde la segunda inicial.
-  test('nombre con doble espacio conserva ambas iniciales', { todo: 'D1: devuelve "A" en lugar de "AP"' }, () => assert.equal(ini('Ana  Pérez'), 'AP'));
+  // BUG-01 (antes D1): con dos espacios seguidos se perdía la segunda inicial. Corregido en v0.1.1.
+  test('BUG-01: nombre con doble espacio conserva ambas iniciales', () => assert.equal(ini('Ana  Pérez'), 'AP'));
+  test('regresión BUG-01: espacios al inicio y al final se ignoran', () => assert.equal(ini('  Ana Pérez  '), 'AP'));
+  test('regresión BUG-01: separadores que no son espacio (tabulación) también separan', () => assert.equal(ini('Ana\tPérez'), 'AP'));
+  test('regresión BUG-01: cadena vacía -> sin iniciales', () => assert.equal(ini(''), ''));
 });
 
 // ------------------------------------------------------------ getProjectStats
