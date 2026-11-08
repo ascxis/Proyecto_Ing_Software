@@ -24,4 +24,4 @@ jobs:
         if: always()
         working-directory: taskflow-app/backend
         run: |
-          awk -F, 'NR>1 {m=$8; c=$9; t=m+c; printf "%-60s líneas sin cubrir=%s cubiertas=%s\n", $3"."$2, $8, $9}' target/site/jacoco/jacoco.csv | sort -t= -k2 -n -r | head -25
+          awk -F, 'NR>1 {printf "%d sin_cubrir, %d cubiertas  %s.%s\n", $8, $9, $2, $3}' target/site/jacoco/jacoco.csv | sort -rn | head -25
