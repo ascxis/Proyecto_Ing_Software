@@ -31,6 +31,6 @@ Se supuso que la persona detuvo la base de datos por mantenimiento. Lo que permi
 ## Acciones
 | Acción | Estado |
 |---|---|
-| Responder 503 con mensaje claro cuando falla la base y bajar el tiempo de espera del pool a 5 s | Implementada en el PR de la guía 14 (verificada en CI) |
+| Responder 503 con mensaje claro cuando falla la base y bajar el tiempo de espera del pool a 5 s | **Hecha y verificada** (PR #23). Repetido el simulacro (ejecución 42512144476): el login durante el incidente devuelve **503** (antes 500) y el servicio queda sano a los **11 s** (antes 63 s); login posterior 200 |
 | Regla de alerta en Prometheus por tasa de 5xx | Pendiente (requiere Alertmanager y un canal de aviso) |
 | Respaldos automáticos de la base de datos | Pendiente (deuda registrada en el roadmap) |

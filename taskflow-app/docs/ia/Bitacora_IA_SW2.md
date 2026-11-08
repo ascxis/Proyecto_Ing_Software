@@ -1,0 +1,60 @@
+# Bitácora de uso de IA — TaskFlow, Ingeniería de Software II (FPI-17 a FPI-31)
+
+Herramienta: Claude (sesiones reales de esta asignatura). Cada fila es un hallazgo registrado en la matriz de auditoría de la ficha correspondiente; la columna «Cat.» sigue esta clave:
+
+- A: Dato, campo, endpoint o archivo inventado, o que no corresponde al sistema real (alucinación en sentido estricto)
+- C: Sobreingeniería no justificada por un escenario
+- D: Versión o dependencia obsoleta o no verificable
+- E: Riesgo de seguridad o de privacidad
+- F: Omisión de un control necesario
+- H: Afirmación sin sustento verificable en el proyecto
+- I: Defecto de código o regla de negocio no pedida
+
+| Guía | Ficha | Cat. | Hallazgo |
+|---|---|---|---|
+| 1 | FPI-17 | I | Validó la cédula como numérica de 5 a 12 dígitos, regla que no se pidió |
+| 2 | FPI-18 | A | Escenario de rendimiento con tablero de 500 tareas y paginación; TaskFlow no pagina |
+| 2 | FPI-18 | A | Escenario de seguridad que exige registrar cada intento rechazado; TaskFlow no lo registra |
+| 2 | FPI-18 | A | Escenario de usabilidad que menciona arrastrar la tarjeta, función que no existe |
+| 2 | FPI-18 | H | Medida de usabilidad (90 % de usuarios nuevos en menos de 3 min) que exige un grupo de prueba que no hay |
+| 3 | FPI-19 | C | WebSockets y Redis pub/sub sin escenario que los pida |
+| 3 | FPI-19 | C | Cola de trabajos, S3/MinIO, OAuth2/Keycloak y Elasticsearch fuera de alcance |
+| 3 | FPI-19 | C | Kubernetes, servicios gestionados y observabilidad completa desde el inicio |
+| 4 | FPI-20 | C | 19 tipos y 3 puertos de salida para un solo caso de uso; 3 elementos eran sobreingeniería y se conservaron 2 puertos |
+| 5 | FPI-21 | H | Costo de 50–100 USD/mes sin precios citados |
+| 5 | FPI-21 | C | Entregó los 4 servicios pese a advertir que un monolito era mejor, con una base compartida |
+| 5 | FPI-21 | F | Supuso internet local confiable en las llamadas síncronas (cubrió solo la parte asíncrona) |
+| 6 | FPI-22 | A | Campo «contrasena» inexistente (el real es «clave») |
+| 6 | FPI-22 | A | Valor «EN_PROGRESO» inexistente (el real es EN_PROCESO) |
+| 6 | FPI-22 | A | Esquema de error {status, mensaje} distinto del real {error} |
+| 6 | FPI-22 | F | Faltó el código 403 en el cambio de estado |
+| 7 | FPI-23 | A | Ayudantes con campos «email» y «password» inexistentes (reales: correo y clave) |
+| 7 | FPI-23 | A | Supuso el id en la raíz de la respuesta de registro (el real está dentro de «usuario») |
+| 8 | FPI-24 | A | Login con «username» y «password» inexistentes |
+| 8 | FPI-24 | A | Crea tareas en POST /api/tareas (el real es POST /api/proyectos/{id}/tareas) |
+| 9 | FPI-25 | D | Versiones sonarqube-scan-action@v6 y attest-build-provenance@v3 no verificables |
+| 9 | FPI-25 | A | Paso de Checkstyle que exige un checkstyle.xml inexistente |
+| 9 | FPI-25 | A | Supuso pruebas del frontend con cobertura que no existen |
+| 9 | FPI-25 | C | Permisos y atestación de procedencia innecesarios para este alcance |
+| 10 | FPI-26 | D | node:20-alpine, al final de su vida útil |
+| 10 | FPI-26 | E | Frontend con nginx corriendo como root en el puerto 80 |
+| 10 | FPI-26 | A | Supuso Vite y npm run build (el proyecto compila con node build.mjs) |
+| 10 | FPI-26 | A | Nombres de variables de entorno que no coinciden con los de Spring Boot de TaskFlow |
+| 10 | FPI-26 | E | Valores por defecto débiles de ejemplo para la contraseña |
+| 11 | FPI-27 | F | Healthcheck «opcional» y sin política de rollback |
+| 11 | FPI-27 | H | Supuso el comportamiento del deploy hook de Render sin comprobarlo |
+| 12 | FPI-28 | D | codeql-action@v3 y Dependency-Check 12.1.0 no verificables |
+| 12 | FPI-28 | F | Dependency-Check sin clave NVD_API_KEY: descarga lenta o fallo |
+| 13 | FPI-29 | I | El Span no se cierra si la cédula es nula (el hash está fuera del try) |
+| 13 | FPI-29 | E | El seudónimo estable de la cédula sigue siendo dato personal y el monto va en claro |
+| 13 | FPI-29 | D | Mezcla el SDK de OpenTelemetry (starter 2.11.0) con logstash-logback-encoder 8.0, versiones sin verificar |
+| 14 | FPI-30 | A | Comando de salud con curl a un puerto de la API que no se publica |
+| 14 | FPI-30 | A | Metas de 15 min y 1 h inventadas |
+| 14 | FPI-30 | E | Sugirió docker system prune y truncar logs con sudo, acciones destructivas sin probar |
+| 14 | FPI-30 | H | Reiniciar la API para liberar el pool, cuando el simulacro mostró que se reconecta sola |
+
+Fichas sin hallazgos sustanciales de error de la IA: FPI-17 (detectó con exactitud 13 problemas del código heredado y sus 5 pruebas pasaron; solo la regla de cédula no pedida), FPI-31 (el refactor se aplicó casi tal cual; la IA avisó que solo veía un fragmento).
+Total: 40 hallazgos. A=16, C=6, D=4, E=4, F=4, H=4, I=2
+Nota sobre la clave: las letras B y G quedaron sin uso tras reclasificar los hallazgos; no son categorías omitidas.
+
+Límite: no se dispone de las fichas de Ingeniería de Software I (FPI-01 a FPI-16), por lo que no están contadas.
