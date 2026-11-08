@@ -84,7 +84,7 @@ paths:
       - { name: id, in: path, required: true, schema: { type: string } }
     post:
       tags: [Tareas]
-      summary: Crear una tarea en el proyecto (RN-01: asignar solo a miembros)
+      summary: "Crear una tarea en el proyecto (RN-01: asignar solo a miembros)"
       requestBody:
         required: true
         content:

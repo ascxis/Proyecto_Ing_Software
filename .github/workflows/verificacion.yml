@@ -58,9 +58,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - name: Validar el contrato OpenAPI
-        run: npx --yes @redocly/cli@1.25.0 lint taskflow-app/docs/openapi.yaml --format=stylish | tee taskflow-app/pruebas-carga/openapi-lint.txt
+        run: |
+          set -o pipefail
+          npx --yes @redocly/cli@1.25.0 lint taskflow-app/docs/openapi.yaml --format=stylish | tee taskflow-app/pruebas-carga/openapi-lint.txt
       - name: Ejecutar la colección de Postman con newman
-        run: npx --yes newman@6.2.1 run taskflow-app/docs/postman_taskflow.json --reporters cli | tee taskflow-app/pruebas-carga/newman.txt
+        run: |
+          set -o pipefail
+          npx --yes newman@6.2.1 run taskflow-app/docs/postman_taskflow.json --reporters cli | tee taskflow-app/pruebas-carga/newman.txt
       - uses: grafana/setup-k6-action@v1
       - name: Ejecutar k6
         working-directory: taskflow-app/pruebas-carga
