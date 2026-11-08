@@ -51,7 +51,10 @@ jobs:
         working-directory: taskflow-app/backend
         env:
           DB_URL: jdbc:postgresql://localhost:5432/taskflow
+          DB_USER: taskflow
+          DB_PASSWORD: taskflow
         run: |
+          export JWT_SECRET="$(openssl rand -hex 32)"   # secreto efímero, solo para esta ejecución
           nohup java -jar target/*.jar > ../api.log 2>&1 &
           for i in $(seq 1 60); do curl -fs localhost:8080/actuator/health && break; sleep 2; done
           curl -fs localhost:8080/actuator/health

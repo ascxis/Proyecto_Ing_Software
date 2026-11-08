@@ -1,2 +1,6 @@
 node_modules
 dist
+.git
+*.log
+.env
+e2e
