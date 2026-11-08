@@ -62,7 +62,9 @@ jobs:
       - name: Guardar resultados
         if: always()
         uses: actions/upload-artifact@v4
-        with: { name: resultados-k6, path: |
+        with:
+          name: resultados-k6
+          path: |
             taskflow-app/pruebas-carga/resumen.json
             taskflow-app/pruebas-carga/k6.txt
             taskflow-app/api.log
