@@ -27,7 +27,7 @@ class ObservabilidadTest {
     @Autowired ObjectMapper json;
     @Autowired MeterRegistry metricas;
 
-    JsonNode post(String url, String token, Object cuerpo) throws Exception {
+    JsonNode enviar(String url, String token, Object cuerpo) throws Exception {
         var req = post(url).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(cuerpo));
         if (token != null) req.header("Authorization", "Bearer " + token);
         var res = mvc.perform(req).andReturn().getResponse();
@@ -38,10 +38,10 @@ class ObservabilidadTest {
     @Test
     void cambiarEstado_registraContadoresPorResultado_ySinDatosPersonalesEnLasEtiquetas() throws Exception {
         String s = UUID.randomUUID().toString().substring(0, 8);
-        JsonNode ana = post("/api/auth/register", null, Map.of("nombre", "Ana Perez", "correo", "ana-" + s + "@test.co", "clave", "secreto1"));
+        JsonNode ana = enviar("/api/auth/register", null, Map.of("nombre", "Ana Perez", "correo", "ana-" + s + "@test.co", "clave", "secreto1"));
         String t = ana.get("token").asText();
-        JsonNode proy = post("/api/proyectos", t, Map.of("nombre", "Proyecto " + s, "descripcion", "d", "fechaLimite", "2026-12-01", "miembrosIds", java.util.List.of()));
-        JsonNode tarea = post("/api/proyectos/" + proy.get("id").asText() + "/tareas", t,
+        JsonNode proy = enviar("/api/proyectos", t, Map.of("nombre", "Proyecto " + s, "descripcion", "d", "fechaLimite", "2026-12-01", "miembrosIds", java.util.List.of()));
+        JsonNode tarea = enviar("/api/proyectos/" + proy.get("id").asText() + "/tareas", t,
                 Map.of("titulo", "Tarea confidencial " + s, "descripcion", "x", "prioridad", "ALTA", "fechaLimite", "2026-11-20", "asignadoId", ana.get("usuario").get("id").asText()));
         double invalidosAntes = metricas.counter("taskflow.cambios.estado", "resultado", "entrada_invalida", "estado", "INVALIDO").count();
         double antes = metricas.counter("taskflow.cambios.estado", "resultado", "ok", "estado", "EN_PROCESO").count();
