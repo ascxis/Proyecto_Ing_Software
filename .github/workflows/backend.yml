@@ -20,3 +20,8 @@ jobs:
       - name: Pruebas (núcleo + integración con H2)
         working-directory: taskflow-app/backend
         run: mvn -B -ntp test
+      - name: Resumen de cobertura por clase (JaCoCo)
+        if: always()
+        working-directory: taskflow-app/backend
+        run: |
+          awk -F, 'NR>1 {m=$8; c=$9; t=m+c; printf "%-60s líneas sin cubrir=%s cubiertas=%s\n", $3"."$2, $8, $9}' target/site/jacoco/jacoco.csv | sort -t= -k2 -n -r | head -25
