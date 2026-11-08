@@ -1,0 +1,266 @@
+openapi: 3.0.3
+info:
+  title: TaskFlow API
+  version: 0.2.0
+  description: Contrato de la API REST de TaskFlow (diseño Design-First, FPI-22). Identificadores como texto.
+servers:
+  - url: http://localhost:8080
+security:
+  - bearerAuth: []
+tags:
+  - name: Identidad
+  - name: Proyectos
+  - name: Tareas
+  - name: Notificaciones
+paths:
+  /api/auth/register:
+    post:
+      tags: [Identidad]
+      summary: Registrar un usuario
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegistroReq' }
+      responses:
+        '201': { description: Usuario creado, content: { application/json: { schema: { $ref: '#/components/schemas/SesionDto' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/auth/login:
+    post:
+      tags: [Identidad]
+      summary: Iniciar sesión y obtener el JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginReq' }
+      responses:
+        '200': { description: Sesión iniciada, content: { application/json: { schema: { $ref: '#/components/schemas/SesionDto' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/proyectos:
+    get:
+      tags: [Proyectos]
+      summary: Listar los proyectos del usuario autenticado
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ProyectoDto' } } } } }
+        '401': { $ref: '#/components/responses/Error' }
+    post:
+      tags: [Proyectos]
+      summary: Crear un proyecto (el creador queda como miembro)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProyectoReq' }
+      responses:
+        '201': { description: Creado, content: { application/json: { schema: { $ref: '#/components/schemas/ProyectoDto' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/proyectos/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Proyectos]
+      summary: Consultar un proyecto del que el usuario es miembro
+      responses:
+        '200': { description: Proyecto, content: { application/json: { schema: { $ref: '#/components/schemas/ProyectoDto' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [Proyectos]
+      summary: Eliminar un proyecto (solo el creador; sin tareas pendientes)
+      responses:
+        '204': { description: Eliminado }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/proyectos/{id}/tareas:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Tareas]
+      summary: Crear una tarea en el proyecto (RN-01: asignar solo a miembros)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TareaReq' }
+      responses:
+        '201': { description: Creada, content: { application/json: { schema: { $ref: '#/components/schemas/TareaDto' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/proyectos/{id}/miembros:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Proyectos]
+      summary: Agregar un miembro (solo el creador)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MiembroReq' }
+      responses:
+        '200': { description: Proyecto actualizado, content: { application/json: { schema: { $ref: '#/components/schemas/ProyectoDto' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/tareas:
+    get:
+      tags: [Tareas]
+      summary: Listar las tareas visibles para el usuario autenticado
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/TareaDto' } } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/tareas/{id}/estado:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [Tareas]
+      summary: Cambiar el estado de una tarea (RN-02, solo el asignado; control de versión)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EstadoReq' }
+      responses:
+        '200': { description: Estado cambiado, content: { application/json: { schema: { $ref: '#/components/schemas/TareaDto' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { description: No es el asignado, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorDto' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { description: Versión obsoleta, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorDto' } } } }
+  /api/tareas/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    put:
+      tags: [Tareas]
+      summary: Editar una tarea (solo el creador del proyecto)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TareaReq' }
+      responses:
+        '200': { description: Editada, content: { application/json: { schema: { $ref: '#/components/schemas/TareaDto' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [Tareas]
+      summary: Eliminar una tarea (solo el creador del proyecto)
+      responses:
+        '204': { description: Eliminada }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/notificaciones:
+    get:
+      tags: [Notificaciones]
+      summary: Listar las notificaciones del usuario autenticado
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/NotificacionDto' } } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/notificaciones/{id}/leer:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Notificaciones]
+      summary: Marcar una notificación como leída
+      responses:
+        '200': { description: Marcada }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  responses:
+    Error:
+      description: Error de negocio o de autenticación
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorDto' } } }
+  schemas:
+    ErrorDto:
+      type: object
+      properties: { error: { type: string } }
+    RegistroReq:
+      type: object
+      required: [nombre, correo, clave]
+      properties:
+        nombre: { type: string }
+        correo: { type: string, format: email }
+        clave: { type: string, minLength: 6, writeOnly: true }
+    LoginReq:
+      type: object
+      required: [correo, clave]
+      properties:
+        correo: { type: string, format: email }
+        clave: { type: string, writeOnly: true }
+    UsuarioDto:
+      type: object
+      properties: { id: { type: string }, nombre: { type: string }, correo: { type: string, format: email }, cargo: { type: string } }
+    SesionDto:
+      type: object
+      properties: { token: { type: string, description: JWT firmado (HS256) con vigencia de 24 h }, usuario: { $ref: '#/components/schemas/UsuarioDto' } }
+    MiembroDto:
+      type: object
+      properties: { usuarioId: { type: string }, nombre: { type: string }, rol: { type: string } }
+    ProyectoReq:
+      type: object
+      required: [nombre]
+      properties:
+        nombre: { type: string }
+        descripcion: { type: string }
+        fechaLimite: { type: string, format: date }
+        miembrosIds: { type: array, items: { type: string } }
+    ProyectoDto:
+      type: object
+      properties:
+        id: { type: string }
+        nombre: { type: string }
+        descripcion: { type: string }
+        fechaLimite: { type: string, format: date }
+        creadorId: { type: string }
+        miembros: { type: array, items: { $ref: '#/components/schemas/MiembroDto' } }
+        totalTareas: { type: integer, format: int64 }
+        completadas: { type: integer, format: int64 }
+        avance: { type: integer, minimum: 0, maximum: 100 }
+    MiembroReq:
+      type: object
+      required: [usuarioId]
+      properties: { usuarioId: { type: string } }
+    TareaReq:
+      type: object
+      required: [titulo]
+      properties:
+        titulo: { type: string }
+        descripcion: { type: string }
+        prioridad: { type: string, enum: [ALTA, MEDIA, BAJA] }
+        fechaLimite: { type: string, format: date }
+        asignadoId: { type: string }
+    TareaDto:
+      type: object
+      properties:
+        id: { type: string }
+        proyectoId: { type: string }
+        titulo: { type: string }
+        descripcion: { type: string }
+        prioridad: { type: string }
+        estado: { type: string, enum: [PENDIENTE, EN_PROCESO, COMPLETADA] }
+        asignadoId: { type: string }
+        fechaLimite: { type: string, format: date }
+        version: { type: integer, format: int64, description: Control de concurrencia optimista }
+    EstadoReq:
+      type: object
+      required: [estado]
+      properties:
+        estado: { type: string, enum: [PENDIENTE, EN_PROCESO, COMPLETADA] }
+        version: { type: integer, format: int64 }
+    NotificacionDto:
+      type: object
+      properties: { id: { type: string }, mensaje: { type: string }, fecha: { type: integer, format: int64 }, leida: { type: boolean } }

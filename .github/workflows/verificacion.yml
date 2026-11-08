@@ -2,7 +2,7 @@ name: Verificación (S-1, S-3, S-4 y lockfile)
 on:
   pull_request:
     branches: [main]
-    paths: ['taskflow-app/pruebas-carga/**', '.github/workflows/verificacion.yml']
+    paths: ['taskflow-app/pruebas-carga/**', 'taskflow-app/docs/**', '.github/workflows/verificacion.yml']
   workflow_dispatch:
 permissions:
   contents: write
@@ -55,6 +55,12 @@ jobs:
           nohup java -jar target/*.jar > ../api.log 2>&1 &
           for i in $(seq 1 60); do curl -fs localhost:8080/actuator/health && break; sleep 2; done
           curl -fs localhost:8080/actuator/health
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Validar el contrato OpenAPI
+        run: npx --yes @redocly/cli@1.25.0 lint taskflow-app/docs/openapi.yaml --format=stylish | tee taskflow-app/pruebas-carga/openapi-lint.txt
+      - name: Ejecutar la colección de Postman con newman
+        run: npx --yes newman@6.2.1 run taskflow-app/docs/postman_taskflow.json --reporters cli | tee taskflow-app/pruebas-carga/newman.txt
       - uses: grafana/setup-k6-action@v1
       - name: Ejecutar k6
         working-directory: taskflow-app/pruebas-carga
@@ -67,4 +73,6 @@ jobs:
           path: |
             taskflow-app/pruebas-carga/resumen.json
             taskflow-app/pruebas-carga/k6.txt
+            taskflow-app/pruebas-carga/openapi-lint.txt
+            taskflow-app/pruebas-carga/newman.txt
             taskflow-app/api.log
