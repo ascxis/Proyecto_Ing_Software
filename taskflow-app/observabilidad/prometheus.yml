@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s        # intervalo corto solo para la demostración; en producción 15–30 s reducen el costo
+scrape_configs:
+  - job_name: taskflow-api
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["api:8080"]

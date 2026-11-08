@@ -1,5 +1,6 @@
 package co.edu.unipamplona.taskflow.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,12 +15,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
     @Bean
-    SecurityFilterChain filtros(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
+    SecurityFilterChain filtros(HttpSecurity http, JwtFilter jwtFilter,
+                                @Value("${taskflow.metricas-abiertas:false}") boolean metricasAbiertas) throws Exception {
         // CSRF desactivado a propósito: API sin estado; la identidad viaja en la cabecera Authorization (JWT), no en cookies de sesión.
         http.csrf(c -> c.disable()) // NOSONAR
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
+                // Métricas: cerradas por defecto; solo se abren en una red privada donde el puerto de la API no se publica.
+                .requestMatchers("/actuator/prometheus").access((auth, ctx) -> new org.springframework.security.authorization.AuthorizationDecision(metricasAbiertas))
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll())
             .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
