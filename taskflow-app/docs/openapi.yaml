@@ -2,6 +2,7 @@ openapi: 3.0.3
 info:
   title: TaskFlow API
   version: 0.2.0
+  license: { name: Uso académico (Universidad de Pamplona) }
   description: Contrato de la API REST de TaskFlow (diseño Design-First, FPI-22). Identificadores como texto.
 servers:
   - url: http://localhost:8080
@@ -9,12 +10,17 @@ security:
   - bearerAuth: []
 tags:
   - name: Identidad
+    description: Registro, inicio de sesión y emisión del JWT
   - name: Proyectos
+    description: Proyectos y membresía del equipo
   - name: Tareas
+    description: Tareas, estados y reglas RN-01/RN-02
   - name: Notificaciones
+    description: Avisos de cambios de estado
 paths:
   /api/auth/register:
     post:
+      operationId: registrarUsuario
       tags: [Identidad]
       summary: Registrar un usuario
       security: []
@@ -29,6 +35,7 @@ paths:
         '409': { $ref: '#/components/responses/Error' }
   /api/auth/login:
     post:
+      operationId: iniciarSesion
       tags: [Identidad]
       summary: Iniciar sesión y obtener el JWT
       security: []
@@ -42,12 +49,14 @@ paths:
         '401': { $ref: '#/components/responses/Error' }
   /api/proyectos:
     get:
+      operationId: listarProyectos
       tags: [Proyectos]
       summary: Listar los proyectos del usuario autenticado
       responses:
         '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ProyectoDto' } } } } }
         '401': { $ref: '#/components/responses/Error' }
     post:
+      operationId: crearProyecto
       tags: [Proyectos]
       summary: Crear un proyecto (el creador queda como miembro)
       requestBody:
@@ -63,6 +72,7 @@ paths:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
     get:
+      operationId: obtenerProyecto
       tags: [Proyectos]
       summary: Consultar un proyecto del que el usuario es miembro
       responses:
@@ -71,6 +81,7 @@ paths:
         '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
     delete:
+      operationId: eliminarProyecto
       tags: [Proyectos]
       summary: Eliminar un proyecto (solo el creador; sin tareas pendientes)
       responses:
@@ -83,6 +94,7 @@ paths:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
     post:
+      operationId: crearTarea
       tags: [Tareas]
       summary: "Crear una tarea en el proyecto (RN-01: asignar solo a miembros)"
       requestBody:
@@ -100,6 +112,7 @@ paths:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
     post:
+      operationId: agregarMiembro
       tags: [Proyectos]
       summary: Agregar un miembro (solo el creador)
       requestBody:
@@ -114,6 +127,7 @@ paths:
         '404': { $ref: '#/components/responses/Error' }
   /api/tareas:
     get:
+      operationId: listarTareas
       tags: [Tareas]
       summary: Listar las tareas visibles para el usuario autenticado
       responses:
@@ -123,6 +137,7 @@ paths:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
     patch:
+      operationId: cambiarEstadoTarea
       tags: [Tareas]
       summary: Cambiar el estado de una tarea (RN-02, solo el asignado; control de versión)
       requestBody:
@@ -141,6 +156,7 @@ paths:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
     put:
+      operationId: editarTarea
       tags: [Tareas]
       summary: Editar una tarea (solo el creador del proyecto)
       requestBody:
@@ -154,6 +170,7 @@ paths:
         '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
     delete:
+      operationId: eliminarTarea
       tags: [Tareas]
       summary: Eliminar una tarea (solo el creador del proyecto)
       responses:
@@ -162,6 +179,7 @@ paths:
         '404': { $ref: '#/components/responses/Error' }
   /api/notificaciones:
     get:
+      operationId: listarNotificaciones
       tags: [Notificaciones]
       summary: Listar las notificaciones del usuario autenticado
       responses:
@@ -171,6 +189,7 @@ paths:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
     post:
+      operationId: marcarNotificacionLeida
       tags: [Notificaciones]
       summary: Marcar una notificación como leída
       responses:

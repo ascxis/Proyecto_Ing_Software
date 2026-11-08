@@ -1,0 +1,5 @@
+extends:
+  - recommended
+rules:
+  # El servidor es de desarrollo local (docker compose); no hay URL pública todavía.
+  no-server-example.com: off

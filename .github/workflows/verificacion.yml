@@ -60,7 +60,7 @@ jobs:
       - name: Validar el contrato OpenAPI
         run: |
           set -o pipefail
-          npx --yes @redocly/cli@1.25.0 lint taskflow-app/docs/openapi.yaml --format=stylish | tee taskflow-app/pruebas-carga/openapi-lint.txt
+          npx --yes @redocly/cli@1.25.0 lint taskflow-app/docs/openapi.yaml --config redocly.yaml --max-problems 0 --format=stylish | tee taskflow-app/pruebas-carga/openapi-lint.txt
       - name: Ejecutar la colección de Postman con newman
         run: |
           set -o pipefail
