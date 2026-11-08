@@ -128,6 +128,7 @@ public class TareaService {
         Tarea t = cargar(tid, uid);
         Proyecto p = t.getProyecto();
         exigirCreador(p, uid, "editar");
+        if (r.titulo() != null) exigirTitulo(r.titulo());   // N6: un título en blanco tampoco se acepta al editar
         Long anterior = t.getAsignado() == null ? null : t.getAsignado().getId();
         Usuario nuevo = r.asignadoId() == null ? t.getAsignado() : asignable(p, r.asignadoId());   // "" quita la asignación
         t.actualizar(r.titulo(), r.descripcion(), r.prioridad() == null ? null : Mapeo.prioridad(r.prioridad()), Mapeo.fecha(r.fechaLimite()));

@@ -94,4 +94,15 @@ class TareaServiceCaracterizacionTest {
         llamar("DELETE", "/api/tareas/" + tareaId, ana, null, 204);
         llamar("PUT", "/api/tareas/" + tareaId, ana, Map.of("titulo", "ya no existe"), 404);
     }
+
+    /** N6 (guía 15): editar no debe aceptar un título en blanco, igual que crear. */
+    @Test
+    void editarConTituloEnBlanco_400_yElTituloNoCambia() throws Exception {
+        assertEquals("El título es obligatorio",
+                llamar("PUT", "/api/tareas/" + tareaId, ana, Map.of("titulo", "   "), 400).get("error").asText());
+        llamar("PUT", "/api/tareas/" + tareaId, ana, Map.of("titulo", ""), 400);
+        JsonNode lista = llamar("GET", "/api/tareas", ana, null, 200);
+        boolean intacta = false; for (JsonNode t : lista) if (t.get("id").asText().equals(tareaId)) intacta = "Tarea X".equals(t.get("titulo").asText());
+        assertTrue(intacta, "el título no debe cambiar");
+    }
 }
