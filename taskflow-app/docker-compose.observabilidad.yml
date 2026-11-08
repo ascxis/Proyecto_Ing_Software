@@ -1,0 +1,42 @@
+# Observabilidad opcional (guía 13). Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.observabilidad.yml up -d
+# Requiere además GRAFANA_PASSWORD en el archivo .env (no hay contraseña por defecto).
+services:
+  api:
+    environment:
+      METRICAS_ABIERTAS: "true"                       # el puerto de la API no se publica: /actuator/prometheus solo es alcanzable en la red interna
+      OTLP_ENABLED: "true"
+      OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      TRACING_SAMPLING: ${TRACING_SAMPLING:-0.1}      # 10 % de las trazas
+  otel-collector:
+    image: otel/opentelemetry-collector:0.111.0
+    command: ["--config=/etc/otel/config.yml"]
+    volumes:
+      - ./observabilidad/otel-collector.yml:/etc/otel/config.yml:ro
+    networks: [backend]
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=7d"]   # retención de métricas: 7 días
+    volumes:
+      - ./observabilidad/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks: [backend, edge]
+  grafana:
+    image: grafana/grafana:11.3.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Defina GRAFANA_PASSWORD en el archivo .env}
+      GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_ANONIMO:-false}
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./observabilidad/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observabilidad/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    networks: [backend, edge]
+    depends_on: [prometheus]
+volumes:
+  promdata:
+  grafanadata:

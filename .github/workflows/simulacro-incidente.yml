@@ -1,0 +1,67 @@
+name: Simulacro de incidente (base de datos caída)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["taskflow-app/docs/runbooks/**", ".github/workflows/simulacro-incidente.yml"]
+permissions:
+  contents: read
+jobs:
+  simulacro:
+    name: Caída de la base de datos y recuperación según el runbook
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: taskflow-app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Levantar el sistema y crear datos
+        run: |
+          { echo "DB_PASSWORD=$(openssl rand -hex 12)"; echo "JWT_SECRET=$(openssl rand -hex 32)"; } > .env
+          docker compose up -d --build
+          saludable() { docker compose exec -T api wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep -q '"status":"UP"'; }
+          for i in $(seq 1 90); do saludable && break; sleep 2; done
+          saludable && echo "Sistema UP"
+          curl -fs -X POST localhost:3000/api/auth/register -H 'Content-Type: application/json' \
+            -d '{"nombre":"Ana","correo":"ana-simulacro@ejemplo.co","clave":"secreto1"}' >/dev/null
+          echo "Usuario creado antes del incidente."
+      - name: Inyectar el fallo y medir detección y recuperación (pasos del runbook)
+        run: |
+          saludable() { docker compose exec -T api wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep -q '"status":"UP"'; }
+          login() { curl -s -o /dev/null -w '%{http_code}' -X POST localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{"correo":"ana-simulacro@ejemplo.co","clave":"secreto1"}'; }
+          echo "login antes del incidente: $(login)"
+          T0=$(date +%s); docker compose stop db; echo "== T0: se detuvo la base de datos =="
+          # Detección: tiempo hasta que la salud de la API deja de ser UP
+          while saludable; do sleep 1; done; T1=$(date +%s)
+          echo "Detección (salud ≠ UP): $((T1-T0)) s"
+          echo "login durante el incidente: $(login)   (se espera 5xx)"
+          echo "---- Runbook, sección 2: diagnóstico ----"
+          docker compose ps
+          docker compose logs --tail=20 db
+          docker compose exec -T api wget -qO- http://localhost:8080/actuator/health || true; echo
+          docker compose exec -T db pg_isready -U taskflow -d taskflow || echo "(db no disponible, como se esperaba)"
+          echo "---- Runbook, sección 3.1: mitigación ----"
+          docker compose up -d db
+          until docker compose exec -T db pg_isready -U taskflow -d taskflow; do sleep 1; done; T2=$(date +%s)
+          echo "Base de nuevo aceptando conexiones: $((T2-T0)) s desde T0"
+          for i in $(seq 1 60); do saludable && break; sleep 1; done
+          if saludable; then T3=$(date +%s); echo "API sana sin reiniciarla: $((T3-T0)) s desde T0"; REINICIO=no
+          else echo "Runbook 3.3: la API no se recuperó sola; se reinicia"; docker compose restart api
+            for i in $(seq 1 90); do saludable && break; sleep 2; done; T3=$(date +%s); REINICIO=si; fi
+          echo "---- Runbook, sección 4: verificación ----"
+          docker compose ps
+          docker compose exec -T api wget -qO- http://localhost:8080/actuator/health; echo
+          CODIGO=$(login); echo "login después del incidente: $CODIGO (los datos sobrevivieron si es 200)"
+          {
+            echo "### Simulacro de incidente"
+            echo "| Medida | Valor |"; echo "|---|---|"
+            echo "| Detección (T0 → salud ≠ UP) | $((T1-T0)) s |"
+            echo "| Base aceptando conexiones (T0 → pg_isready) | $((T2-T0)) s |"
+            echo "| Servicio recuperado (T0 → salud UP) | $((T3-T0)) s |"
+            echo "| ¿Hubo que reiniciar la API? | $REINICIO |"
+            echo "| Login tras el incidente | $CODIGO |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$CODIGO" = "200"
+      - name: Apagar
+        if: always()
+        run: docker compose down -v

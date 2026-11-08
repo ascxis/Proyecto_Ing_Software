@@ -6,7 +6,12 @@ import co.edu.unipamplona.taskflow.domain.*;
 import co.edu.unipamplona.taskflow.dto.Dto.*;
 import co.edu.unipamplona.taskflow.repo.*;
 import co.edu.unipamplona.taskflow.web.ApiException;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +24,15 @@ public class TareaService {
     private final UsuarioRepository usuarios;
     private final NotificacionService notificaciones;
     private final CambiarEstadoTarea casoCambiarEstado;
+    private final ObservationRegistry observaciones;
+    private final MeterRegistry metricas;
+    private static final Logger LOG = LoggerFactory.getLogger(TareaService.class);
 
     public TareaService(TareaRepository tareas, ProyectoService proyectos, MiembroRepository miembros,
-                        UsuarioRepository usuarios, NotificacionService notificaciones, CambiarEstadoTarea casoCambiarEstado) {
+                        UsuarioRepository usuarios, NotificacionService notificaciones, CambiarEstadoTarea casoCambiarEstado,
+                        ObservationRegistry observaciones, MeterRegistry metricas) {
         this.tareas = tareas; this.proyectos = proyectos; this.miembros = miembros; this.usuarios = usuarios; this.notificaciones = notificaciones; this.casoCambiarEstado = casoCambiarEstado;
+        this.observaciones = observaciones; this.metricas = metricas;
     }
 
     @Transactional(readOnly = true)
@@ -55,11 +65,40 @@ public class TareaService {
      * Delegado al núcleo hexagonal (core.CambiarEstadoTarea): RN-02, RN-05, RN-09 y control de versión viven allí,
      * sin dependencias de Spring/JPA. Este método solo traduce los errores de negocio a códigos HTTP.
      */
+    /**
+     * Endpoint crítico instrumentado (guía 13). Una sola Observation de Micrometer produce:
+     *  - un SPAN OpenTelemetry «taskflow.tarea.cambiar_estado» (si la traza es muestreada),
+     *  - una MÉTRICA de duración (Timer) con el mismo nombre, más un contador taskflow_cambios_estado por resultado,
+     *  - un LOG estructurado (JSON) con traceId/spanId, sin datos personales: solo ids numéricos y el estado destino.
+     * Nunca se registran nombres, correos ni títulos de tareas (Ley 1581 de 2012).
+     */
     @Transactional
     public TareaDto cambiarEstado(Long uid, Long tid, EstadoReq r) {
-        try { casoCambiarEstado.ejecutar(uid, tid, r.estado(), r.version()); }
-        catch (ReglaNegocioException e) { throw new ApiException(http(e.tipo()), e.getMessage()); }
-        return Mapeo.tarea(cargar(tid, uid));
+        Observation obs = Observation.createNotStarted("taskflow.tarea.cambiar_estado", observaciones)
+                .lowCardinalityKeyValue("estado.destino", estadoConocido(r.estado()));   // etiqueta acotada: nunca texto libre
+        return obs.observe(() -> {
+            try {
+                casoCambiarEstado.ejecutar(uid, tid, r.estado(), r.version());
+                contar("ok", r.estado());
+                LOG.atInfo().addKeyValue("tareaId", tid).addKeyValue("estadoDestino", estadoConocido(r.estado()))
+                        .addKeyValue("resultado", "ok").log("estado de tarea cambiado");
+            } catch (ReglaNegocioException e) {
+                contar(e.tipo().name().toLowerCase(), r.estado());
+                LOG.atWarn().addKeyValue("tareaId", tid).addKeyValue("estadoDestino", estadoConocido(r.estado()))
+                        .addKeyValue("resultado", e.tipo().name().toLowerCase()).log("cambio de estado rechazado");
+                throw new ApiException(http(e.tipo()), e.getMessage());
+            }
+            return Mapeo.tarea(cargar(tid, uid));
+        });
+    }
+
+    private void contar(String resultado, String estado) {
+        metricas.counter("taskflow.cambios.estado", "resultado", resultado, "estado", estadoConocido(estado)).increment();
+    }
+
+    private static String estadoConocido(String estado) {
+        try { return co.edu.unipamplona.taskflow.core.EstadoTarea.valueOf(estado).name(); }
+        catch (IllegalArgumentException | NullPointerException e) { return "INVALIDO"; }
     }
 
     private static HttpStatus http(ReglaNegocioException.Tipo t) {
