@@ -27,7 +27,7 @@ jobs:
           docker build -t taskflow-api:ci backend
           docker build -t taskflow-web:ci frontend
 
-      - name: Peso de las imágenes (MB): sin multietapa, Dockerfile de la IA y el nuestro
+      - name: "Peso de las imágenes (MB) — sin multietapa, Dockerfile de la IA y el nuestro"
         run: |
           docker build -t taskflow-api:naive -f docs/ia/Dockerfile.backend-monoetapa backend
           docker build -t taskflow-api:ia -f docs/ia/Dockerfile.backend-ia backend

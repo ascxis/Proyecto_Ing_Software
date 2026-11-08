@@ -49,20 +49,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Dependencias y secretos del repositorio (falla con ALTA o CRÍTICA)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: fs
-          scan-ref: taskflow-app
-          scanners: vuln,secret
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: '1'
-          format: table
-          output: trivy-fs.txt
-          trivyignores: .trivyignore
-      - name: Mostrar el reporte
-        if: always()
-        run: cat trivy-fs.txt || true
+        run: |
+          set +e
+          docker run --rm -v "$PWD:/w" aquasec/trivy:latest fs \
+            --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed \
+            --ignorefile /w/.trivyignore --exit-code 1 /w/taskflow-app 2>&1 | tee trivy-fs.txt
+          exit "${PIPESTATUS[0]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -80,19 +72,12 @@ jobs:
       - name: Construir la imagen
         run: docker build -t taskflow-api:scan taskflow-app/backend
       - name: Escanear la imagen (falla con ALTA o CRÍTICA)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: taskflow-api:scan
-          scanners: vuln
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: '1'
-          format: table
-          output: trivy-imagen.txt
-          trivyignores: .trivyignore
-      - name: Mostrar el reporte
-        if: always()
-        run: cat trivy-imagen.txt || true
+        run: |
+          set +e
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/w" aquasec/trivy:latest image \
+            --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+            --ignorefile /w/.trivyignore --exit-code 1 taskflow-api:scan 2>&1 | tee trivy-imagen.txt
+          exit "${PIPESTATUS[0]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
