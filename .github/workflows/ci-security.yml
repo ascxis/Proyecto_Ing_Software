@@ -1,0 +1,102 @@
+name: Seguridad (SAST y SCA)
+
+# Shift-left: se ejecuta en cada Pull Request y en main. Falla (código de salida != 0) ante cualquier
+# hallazgo de severidad ALTA o CRÍTICA sin mitigar. Los reportes quedan como artefactos privados de la
+# ejecución; nunca se envían a un servicio externo público.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 9 * * 1'     # lunes: aparecen CVE nuevos aunque el código no cambie
+
+permissions:
+  contents: read
+
+jobs:
+  sast:
+    name: SAST con Semgrep (código propio)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Instalar Semgrep
+        run: pip install --quiet semgrep
+      - name: Escanear (falla ante severidad ERROR)
+        run: |
+          semgrep scan \
+            --config p/java --config p/typescript --config p/owasp-top-ten --config p/secrets \
+            --severity ERROR --error \
+            --metrics=off \
+            --json --output semgrep.json \
+            taskflow-app/backend/src taskflow-app/frontend/src .github \
+            || { semgrep scan --config p/java --config p/typescript --config p/owasp-top-ten --config p/secrets --severity ERROR --metrics=off taskflow-app/backend/src taskflow-app/frontend/src .github | tail -60; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reporte-semgrep
+          path: semgrep.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+  sca:
+    name: SCA y secretos con Trivy (dependencias)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencias y secretos del repositorio (falla con ALTA o CRÍTICA)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: taskflow-app
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
+          output: trivy-fs.txt
+          trivyignores: .trivyignore
+      - name: Mostrar el reporte
+        if: always()
+        run: cat trivy-fs.txt || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reporte-trivy-dependencias
+          path: trivy-fs.txt
+          retention-days: 14
+          if-no-files-found: ignore
+
+  imagen:
+    name: Trivy sobre la imagen del backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen
+        run: docker build -t taskflow-api:scan taskflow-app/backend
+      - name: Escanear la imagen (falla con ALTA o CRÍTICA)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: taskflow-api:scan
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
+          output: trivy-imagen.txt
+          trivyignores: .trivyignore
+      - name: Mostrar el reporte
+        if: always()
+        run: cat trivy-imagen.txt || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reporte-trivy-imagen
+          path: trivy-imagen.txt
+          retention-days: 14
+          if-no-files-found: ignore

@@ -27,13 +27,17 @@ jobs:
           docker build -t taskflow-api:ci backend
           docker build -t taskflow-web:ci frontend
 
-      - name: Peso de las imágenes (MB)
+      - name: Peso de las imágenes (MB): sin multietapa, Dockerfile de la IA y el nuestro
         run: |
+          docker build -t taskflow-api:naive -f docs/ia/Dockerfile.backend-monoetapa backend
+          docker build -t taskflow-api:ia -f docs/ia/Dockerfile.backend-ia backend
           {
             echo "## Peso de las imágenes"
             echo '```'
-            docker images --format '{{.Repository}}:{{.Tag}}  {{.Size}}' | grep -E 'taskflow-(api|web):ci|maven|eclipse-temurin|node|nginx'
+            docker images --format '{{.Repository}}:{{.Tag}}  {{.Size}}' | grep -E 'taskflow-(api|web):(ci|ia|naive)'
             echo '```'
+            for t in naive ia ci; do printf '%s %s bytes\n' "taskflow-api:$t" "$(docker image inspect taskflow-api:$t --format '{{.Size}}')"; done
+            docker image inspect taskflow-web:ci --format 'taskflow-web:ci {{.Size}} bytes'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: La imagen final corre con un usuario que no es root
