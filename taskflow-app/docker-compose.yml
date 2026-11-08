@@ -22,6 +22,9 @@ services:
   api:
     build: ./backend
     restart: unless-stopped
+    logging:                      # rotación de logs (guía 13): máximo 3 archivos de 10 MB = 30 MB por contenedor
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
     environment:
       DB_URL: jdbc:postgresql://db:5432/taskflow
       DB_USER: taskflow

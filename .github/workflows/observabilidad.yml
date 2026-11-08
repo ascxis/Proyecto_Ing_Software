@@ -106,6 +106,13 @@ jobs:
           if grep -q "# HELP" /tmp/via-nginx.txt; then echo "¡las métricas salen por el puerto público!"; exit 1; fi
           echo "El puerto público (3000) no entrega métricas: $(head -c 60 /tmp/via-nginx.txt | tr -d '\n')"
           # y la API, aun alcanzada directamente, las niega sin METRICAS_ABIERTAS (probado en ObservabilidadTest)
+      - name: Costo de almacenamiento de la telemetría (para el ADR)
+        run: |
+          echo "Líneas de log de la API: $(wc -l < /tmp/api.log)  ·  bytes: $(wc -c < /tmp/api.log)"
+          echo "Bytes por línea JSON con tareaId (promedio): $(grep '"tareaId"' /tmp/api.log | awk '{n+=length($0)+1} END {printf "%d", n/NR}')"
+          echo "Tamaño de la base de series de Prometheus:"; docker compose -f docker-compose.yml -f docker-compose.observabilidad.yml exec -T prometheus du -sk /prometheus
+          echo "Series activas: $(curl -fsG localhost:9090/api/v1/query --data-urlencode 'query=count({__name__=~".+"})' | jq -r '.data.result[0].value[1]')"
+          echo "Memoria de los contenedores:"; docker stats --no-stream --format '  {{.Name}}: {{.MemUsage}}' 
       - name: Captura del dashboard
         run: |
           npx -y playwright@1.49.1 install --with-deps chromium >/dev/null 2>&1
