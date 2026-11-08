@@ -5,6 +5,8 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/taskflow}
     username: ${DB_USER:taskflow}
     password: ${DB_PASSWORD}
+    hikari:
+      connection-timeout: 5000       # 5 s (antes 30 s): si la base cae, la API falla rápido en vez de colgarse
   jpa:
     open-in-view: false
     hibernate:

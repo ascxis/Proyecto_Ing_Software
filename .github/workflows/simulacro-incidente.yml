@@ -34,7 +34,7 @@ jobs:
           # Detección: tiempo hasta que la salud de la API deja de ser UP
           while saludable; do sleep 1; done; T1=$(date +%s)
           echo "Detección (salud ≠ UP): $((T1-T0)) s"
-          echo "login durante el incidente: $(login)   (se espera 5xx)"
+          LOGIN_INC=$(login); echo "login durante el incidente: $LOGIN_INC   (se espera 503)"
           echo "---- Runbook, sección 2: diagnóstico ----"
           docker compose ps
           docker compose logs --tail=20 db
@@ -59,8 +59,9 @@ jobs:
             echo "| Base aceptando conexiones (T0 → pg_isready) | $((T2-T0)) s |"
             echo "| Servicio recuperado (T0 → salud UP) | $((T3-T0)) s |"
             echo "| ¿Hubo que reiniciar la API? | $REINICIO |"
-            echo "| Login tras el incidente | $CODIGO |"
+            echo "| Login durante el incidente | $LOGIN_INC |"; echo "| Login tras el incidente | $CODIGO |"
           } >> "$GITHUB_STEP_SUMMARY"
+          test "$LOGIN_INC" = "503"
           test "$CODIGO" = "200"
       - name: Apagar
         if: always()

@@ -10,7 +10,7 @@
 ## 1. Cuándo se activa
 
 Cualquiera de estas señales:
-- La alerta de disponibilidad (SLI) cae por debajo del SLO (ver `SLO_taskflow.md`), o el panel de Grafana muestra el porcentaje de errores 5xx subiendo.
+- La alerta de disponibilidad (SLI) cae por debajo del SLO (ver `../SLO_taskflow.md`), o el panel de Grafana muestra el porcentaje de errores 5xx subiendo.
 - `GET /actuator/health` responde `DOWN` (HTTP 503) o no responde.
 - Los usuarios reportan que no pueden iniciar sesión (la API devuelve 5xx).
 
