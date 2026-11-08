@@ -67,7 +67,7 @@ class TareaReglasTest {
         JsonNode r = llamar("PATCH", "/api/tareas/" + tareaId + "/estado", beto, Map.of("estado", "COMPLETADA", "version", 0), 200);
         assertEquals("COMPLETADA", r.get("estado").asText());
         JsonNode notifs = llamar("GET", "/api/notificaciones", ana, null, 200);
-        assertTrue(notifs.get(0).get("mensaje").asText().contains("cambió \"Tarea de Beto\" a completada"));
+        assertTrue(notifs.get(0).get("mensaje").asText().contains("cambió \"Tarea de Beto\" a completada"), "notificaciones de Ana: " + notifs);
         assertFalse(notifs.get(0).get("leida").asBoolean());
     }
 
