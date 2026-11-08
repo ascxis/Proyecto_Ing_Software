@@ -1,0 +1,76 @@
+name: Sobrecarga de la telemetría (latencia)
+# Guía 13: mide cuánto cambia la latencia de PATCH /api/tareas/{id}/estado (rampa de 50 usuarios, k6) con tres
+# configuraciones de observabilidad. Se alternan dos rondas para ver la variación entre ejecuciones iguales.
+# Limitación: el servidor de GitHub Actions es compartido y ruidoso; sirve para estimar el orden de magnitud, no para
+# garantizar un valor en otro entorno.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: [".github/workflows/latencia-telemetria.yml"]
+permissions:
+  contents: read
+jobs:
+  medir:
+    name: Medir con tres configuraciones
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: taskflow-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/setup-k6-action@v1
+      - name: .env temporal y construcción de las imágenes
+        run: |
+          {
+            echo "DB_PASSWORD=$(openssl rand -hex 12)"
+            echo "JWT_SECRET=$(openssl rand -hex 32)"
+            echo "GRAFANA_PASSWORD=$(openssl rand -hex 12)"
+          } > .env
+          cat > /tmp/base.yml <<'Y'
+          services:
+            api:
+              environment:
+                TRACING_SAMPLING: "0"
+                OTLP_ENABLED: "false"
+          Y
+          docker compose -f docker-compose.yml -f docker-compose.observabilidad.yml build
+      - name: Medir A (sin exportar trazas), B (10 % + pila) y C (100 % + pila), dos rondas
+        run: |
+          mkdir -p /tmp/res
+          levantar() {   # $1 = A|B|C
+            docker compose -f docker-compose.yml -f docker-compose.observabilidad.yml down -v >/dev/null 2>&1 || true
+            case "$1" in
+              A) docker compose -f docker-compose.yml -f /tmp/base.yml up -d db api web ;;
+              B) TRACING_SAMPLING=0.1 docker compose -f docker-compose.yml -f docker-compose.observabilidad.yml up -d ;;
+              C) TRACING_SAMPLING=1.0 docker compose -f docker-compose.yml -f docker-compose.observabilidad.yml up -d ;;
+            esac
+            for i in $(seq 1 90); do
+              docker compose exec -T api wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep -q UP && break; sleep 2
+            done
+            sleep 10   # calentamiento del JIT
+          }
+          for ronda in 1 2; do
+            for cfg in A B C; do
+              echo "=== ronda $ronda, configuración $cfg"
+              levantar $cfg
+              BASE_URL=http://localhost:3000 k6 run --quiet --summary-trend-stats="avg,med,p(90),p(95),p(99),max" \
+                --summary-export=/tmp/res/$cfg-$ronda.json pruebas-carga/rampa-estado.js > /tmp/res/$cfg-$ronda.txt 2>&1 || echo "(umbral de k6 incumplido en $cfg-$ronda)"
+              docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' | tee /tmp/res/mem-$cfg-$ronda.txt
+            done
+          done
+      - name: Tabla de resultados
+        run: |
+          {
+          echo "| Config | Ronda | req/s | media ms | p95 ms | p99 ms | error % |"
+          echo "|---|---|---|---|---|---|---|"
+          for ronda in 1 2; do for cfg in A B C; do
+            f=/tmp/res/$cfg-$ronda.json
+            jq -r --arg c "$cfg" --arg r "$ronda" '.metrics as $m | "| \($c) | \($r) | \($m.http_reqs.rate*100|round/100) | \($m.http_req_duration.avg*100|round/100) | \($m.http_req_duration["p(95)"]*100|round/100) | \($m.http_req_duration["p(99)"]*100|round/100) | \(($m.http_req_failed.value // 0)*10000|round/100) |"' $f
+          done; done
+          echo; echo "A = trazas sin exportar (muestreo 0); B = muestreo 10 % con colector, Prometheus y Grafana; C = muestreo 100 % con la misma pila."
+          } | tee /tmp/res/tabla.md >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/res/tabla.md
+      - name: Apagar
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.observabilidad.yml down -v
