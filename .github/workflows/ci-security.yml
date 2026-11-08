@@ -48,11 +48,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Dependencias y secretos del repositorio (falla con ALTA o CRÍTICA)
+      # El pom.xml no se lee aquí porque Maven Central responde 429 a Trivy; las dependencias de Java se
+      # analizan en el job «imagen» sobre el jar real empaquetado.
+      - name: Dependencias npm y secretos del repositorio (falla con ALTA o CRÍTICA)
         run: |
           set +e
           docker run --rm -v "$PWD:/w" aquasec/trivy:latest fs \
             --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed \
+            --skip-files /w/taskflow-app/backend/pom.xml \
             --ignorefile /w/.trivyignore --exit-code 1 /w/taskflow-app 2>&1 | tee trivy-fs.txt
           exit "${PIPESTATUS[0]}"
       - uses: actions/upload-artifact@v4
