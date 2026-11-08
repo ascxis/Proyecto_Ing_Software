@@ -1,0 +1,79 @@
+name: Respaldo y restauración (simulacro)
+# Guía 14: demuestra que el respaldo se puede restaurar. Crea datos reales con la API, respalda, restaura en una base
+# nueva y compara el número de filas de cada tabla. Se repite cada semana para detectar respaldos que dejaron de servir.
+on:
+  pull_request:
+    paths: ["taskflow-app/despliegue/**", "taskflow-app/docker-compose.yml", ".github/workflows/respaldo.yml"]
+  schedule:
+    - cron: "17 9 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: respaldo-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  simulacro:
+    name: Respaldar, restaurar y comparar
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: taskflow-app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generar .env temporal
+        run: |
+          {
+            echo "DB_PASSWORD=$(openssl rand -hex 12)"
+            echo "JWT_SECRET=$(openssl rand -hex 32)"
+            echo "SEED=true"
+          } > .env
+      - name: Levantar base de datos y API
+        run: |
+          docker compose up -d --build db api web
+          for i in $(seq 1 90); do
+            docker compose exec -T api wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep -q UP && break; sleep 2
+          done
+          docker compose exec -T api wget -qO- http://localhost:8080/actuator/health
+      - name: Crear datos a través de la API (usuarios, proyecto y tarea)
+        run: |
+          A=$(date +%s)
+          reg() { curl -fs -X POST localhost:3000/api/auth/register -H 'Content-Type: application/json' -d "{\"nombre\":\"$1\",\"correo\":\"$1$A@respaldo.test\",\"clave\":\"secreto1\"}"; }
+          T=$(reg Ana | jq -r .token); reg Beto > /dev/null
+          P=$(curl -fs -X POST localhost:3000/api/proyectos -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
+              -d '{"nombre":"Respaldo","descripcion":"d","fechaLimite":"2026-12-31","miembrosIds":[]}' | jq -r .id)
+          curl -fs -X POST localhost:3000/api/proyectos/$P/tareas -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
+              -d '{"titulo":"Tarea de respaldo","descripcion":"x","prioridad":"ALTA","fechaLimite":"2026-12-20"}' > /dev/null
+      - name: Contar filas por tabla en la base original
+        run: |
+          contar() {  # $1 = base
+            for t in $(docker compose exec -T db psql -U taskflow -d "$1" -Atc "select tablename from pg_tables where schemaname='public' order by 1"); do
+              echo "$t $(docker compose exec -T db psql -U taskflow -d "$1" -Atc "select count(*) from $t")"
+            done
+          }
+          contar taskflow | tee /tmp/antes.txt
+          grep -E '^usuarios [3-9]|^usuarios [1-9][0-9]' /tmp/antes.txt
+          grep -E '^tareas [1-9]' /tmp/antes.txt
+      - name: Respaldar (y comprobar la rotación de 2 respaldos)
+        run: |
+          RETENCION=2 ./despliegue/respaldo.sh respaldos
+          sleep 1; RETENCION=2 ./despliegue/respaldo.sh respaldos
+          sleep 1; RETENCION=2 ./despliegue/respaldo.sh respaldos
+          test "$(ls respaldos/*.dump | wc -l)" = "2"
+      - name: Restaurar en una base nueva y comparar
+        run: |
+          ULTIMO=$(ls -1t respaldos/*.dump | head -1)
+          ./despliegue/restaurar.sh "$ULTIMO" taskflow_restaurada
+          for t in $(docker compose exec -T db psql -U taskflow -d taskflow_restaurada -Atc "select tablename from pg_tables where schemaname='public' order by 1"); do
+            echo "$t $(docker compose exec -T db psql -U taskflow -d taskflow_restaurada -Atc "select count(*) from $t")"
+          done | tee /tmp/despues.txt
+          diff /tmp/antes.txt /tmp/despues.txt && echo "La base restaurada tiene las mismas filas que la original"
+      - name: Pérdida simulada (se borra una tabla) y recuperación desde el respaldo
+        run: |
+          docker compose exec -T db psql -U taskflow -d taskflow_restaurada -c "TRUNCATE notificaciones, tareas, miembros_proyecto, proyectos, usuarios CASCADE"
+          ./despliegue/restaurar.sh "$(ls -1t respaldos/*.dump | head -1)" taskflow_restaurada
+          docker compose exec -T db psql -U taskflow -d taskflow_restaurada -Atc "select count(*) from usuarios" | awk '$1>=3{ok=1} END{exit !ok}'
+      - name: Apagar
+        if: always()
+        run: docker compose down -v

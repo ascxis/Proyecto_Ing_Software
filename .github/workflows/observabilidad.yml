@@ -79,6 +79,14 @@ jobs:
           echo "Resultados de negocio:"
           curl -fsG localhost:9090/api/v1/query --data-urlencode "query=sum by (resultado) (taskflow_cambios_estado_total)" | jq -r '.data.result[] | "  \(.metric.resultado): \(.value[1])"'
           test "$(q "sum(http_server_requests_seconds_count{$U})")" != "sin datos"
+      - name: Reglas de alerta (guía 14) — validadas con promtool y cargadas en Prometheus
+        run: |
+          docker run --rm --entrypoint promtool -v "$PWD/observabilidad:/obs:ro" prom/prometheus:v2.55.1 check rules /obs/alertas.yml
+          docker run --rm --entrypoint promtool -v "$PWD/observabilidad:/obs:ro" prom/prometheus:v2.55.1 test rules /obs/alertas_test.yml
+          curl -fs localhost:9090/api/v1/rules | jq -r '.data.groups[].rules[] | "  regla cargada: \(.name) (\(.state))"'
+          curl -fs localhost:9090/api/v1/rules | jq -e '[.data.groups[].rules[].name] | contains(["TaskFlowErrores5xx","TaskFlowApiCaida"])'
+          echo "Alertas disparándose con tráfico sano: $(curl -fs localhost:9090/api/v1/alerts | jq '[.data.alerts[] | select(.state=="firing")] | length')"
+          test "$(curl -fs localhost:9090/api/v1/alerts | jq '[.data.alerts[] | select(.state=="firing")] | length')" = "0"
       - name: Verificar que Grafana tiene el dashboard y la fuente de datos
         run: |
           curl -fs "localhost:3001/api/search?query=TaskFlow" | jq -r '.[].title'
