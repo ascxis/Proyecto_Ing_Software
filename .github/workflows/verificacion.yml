@@ -69,7 +69,14 @@ jobs:
       - uses: grafana/setup-k6-action@v1
       - name: Ejecutar k6
         working-directory: taskflow-app/pruebas-carga
-        run: k6 run --summary-export=resumen.json escenarios.js | tee k6.txt
+        run: |
+          set -o pipefail
+          k6 run --summary-export=resumen.json escenarios.js | tee k6.txt
+      - name: Ejecutar k6 con rampa de 50 usuarios sobre PATCH estado
+        working-directory: taskflow-app/pruebas-carga
+        run: |
+          set -o pipefail
+          k6 run --summary-export=resumen-rampa.json rampa-estado.js | tee k6-rampa.txt
       - name: Guardar resultados
         if: always()
         uses: actions/upload-artifact@v4
@@ -78,6 +85,7 @@ jobs:
           path: |
             taskflow-app/pruebas-carga/resumen.json
             taskflow-app/pruebas-carga/k6.txt
+            taskflow-app/pruebas-carga/k6-rampa.txt
             taskflow-app/pruebas-carga/openapi-lint.txt
             taskflow-app/pruebas-carga/newman.txt
             taskflow-app/api.log
