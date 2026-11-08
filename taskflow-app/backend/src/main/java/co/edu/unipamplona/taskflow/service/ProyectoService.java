@@ -1,5 +1,6 @@
 package co.edu.unipamplona.taskflow.service;
 
+import co.edu.unipamplona.taskflow.core.Avance;
 import co.edu.unipamplona.taskflow.domain.*;
 import co.edu.unipamplona.taskflow.dto.Dto.*;
 import co.edu.unipamplona.taskflow.repo.*;
@@ -29,7 +30,7 @@ public class ProyectoService {
         long ok = tareas.countByProyectoIdAndEstado(p.getId(), Estado.COMPLETADA);
         List<MiembroDto> ms = p.getMiembros().stream()
                 .map(m -> new MiembroDto(String.valueOf(m.getUsuario().getId()), m.getUsuario().getNombre(), m.getRol().name())).toList();
-        int avance = total == 0 ? 0 : (int) Math.round(ok * 100.0 / total);   // RN-10
+        int avance = Avance.porcentaje(ok, total);   // RN-10, regla única y probada en el núcleo
         return new ProyectoDto(String.valueOf(p.getId()), p.getNombre(), p.getDescripcion(),
                 p.getFechaLimite() == null ? "" : p.getFechaLimite().toString(), String.valueOf(p.getCreador().getId()), ms, total, ok, avance);
     }

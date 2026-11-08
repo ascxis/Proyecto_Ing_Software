@@ -5,6 +5,6 @@ public final class Avance {
     private Avance() { }
 
     public static int porcentaje(long completadas, long total) {
-        return total == 0 ? 0 : (int) Math.round(completadas * 100.0 / total);   // fase VERDE: lo mínimo que hace pasar las pruebas
+        return total == 0 ? 0 : (int) Math.round(completadas * 100.0 / total);
     }
 }
