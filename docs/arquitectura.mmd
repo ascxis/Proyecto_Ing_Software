@@ -1,0 +1,14 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TB
+  REST["TareaController · REST + JWT<br/>(adaptador de entrada)"] --> SVC["TareaService<br/>(traduce errores de negocio a HTTP)"]
+  SVC --> UC
+  subgraph CORE["NÚCLEO · paquete core · Java puro, 0 imports de Spring/JPA"]
+    UC["CambiarEstadoTarea<br/>RN-02 · RN-05 · RN-09 · control de versión"]
+    UC --> P1(["«puerto» TareaPuerto"])
+    UC --> P2(["«puerto» NotificadorPuerto"])
+  end
+  A1["TareaJpaAdapter<br/>JPA + @Version"] -.->|implementa| P1
+  A2["NotificadorAdapter<br/>tabla notificaciones"] -.->|implementa| P2
+  F["Falsos en memoria<br/>PruebasNucleo"] -.->|implementa| P1
+  A1 --> DB[("PostgreSQL 16 / H2")]
+  A2 --> DB

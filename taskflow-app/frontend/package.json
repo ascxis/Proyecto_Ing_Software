@@ -1,0 +1,13 @@
+{
+  "name": "taskflow-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && node dev/mock-server.mjs",
+    "test:e2e": "node e2e/run.mjs"
+  },
+  "dependencies": { "react": "^18.3.1", "react-dom": "^18.3.1" },
+  "devDependencies": { "@types/react": "^18.3.3", "@types/react-dom": "^18.3.0", "esbuild": "^0.23.0", "tailwindcss": "^4.0.0", "typescript": "^5.5.0", "playwright": "^1.45.0" }
+}
