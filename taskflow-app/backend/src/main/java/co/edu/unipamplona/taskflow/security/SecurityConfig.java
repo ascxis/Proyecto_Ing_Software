@@ -15,7 +15,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     @Bean
     SecurityFilterChain filtros(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
-        http.csrf(c -> c.disable())
+        // CSRF desactivado a propósito: API sin estado; la identidad viaja en la cabecera Authorization (JWT), no en cookies de sesión.
+        http.csrf(c -> c.disable()) // NOSONAR
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/api/auth/**", "/actuator/health").permitAll()

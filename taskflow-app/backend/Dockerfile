@@ -10,5 +10,7 @@ RUN mvn -q -B package -DskipTests
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/taskflow-1.0.0.jar app.jar
+RUN useradd --system --uid 10001 --no-create-home app
+USER app
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -7,7 +7,7 @@ import path from 'node:path';
 
 const SECRET = 'dev-secret';
 const PORT = Number(process.env.PORT || 8080);
-const WEB = process.env.WEB_DIR || path.resolve('dist');
+const WEB = path.resolve(process.env.WEB_DIR || 'dist');
 let seq = 100;
 const nid = (p) => p + (++seq);
 const hash = (s) => crypto.createHash('sha256').update('salt:' + s).digest('hex');
@@ -144,11 +144,14 @@ async function api(req, res, url) {
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
 http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://x');
+  const url = new URL(req.url, 'https://localhost'); // base ficticia: solo se usa para separar ruta y query
   try {
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
-    let f = path.join(WEB, url.pathname === '/' ? 'index.html' : url.pathname);
-    if (!f.startsWith(WEB) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(WEB, 'index.html');
+    // Se resuelve dentro de WEB y se descarta cualquier ruta que salga de él; si no es un archivo servible, se entrega index.html (SPA)
+    let f = path.resolve(WEB, '.' + decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
+    const dentro = f === WEB || f.startsWith(WEB + path.sep);
+    if (!dentro) f = path.join(WEB, 'index.html');
+    else { try { if (fs.statSync(f).isDirectory()) f = path.join(WEB, 'index.html'); } catch { f = path.join(WEB, 'index.html'); } }
     res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
   } catch (e) { console.error(e); err(res, 500, 'Error interno'); }
 }).listen(PORT, () => console.log(`mock TaskFlow en http://localhost:${PORT}`));

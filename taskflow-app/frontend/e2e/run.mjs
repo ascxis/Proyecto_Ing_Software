@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 
 const PORT = 8099, BASE = `http://localhost:${PORT}`;
-const srv = spawn('node', ['dev/mock-server.mjs'], { env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
+const srv = spawn(process.execPath, ['dev/mock-server.mjs'], { env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 800));
 const api = async (m, p, body, tok) => { const r = await fetch(BASE + p, { method: m, headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) }, body: body && JSON.stringify(body) }); return { status: r.status, data: r.status === 204 ? null : await r.json().catch(() => null) }; };
 const login = async (c, k) => (await api('POST', '/api/auth/login', { correo: c, clave: k })).data.token;
