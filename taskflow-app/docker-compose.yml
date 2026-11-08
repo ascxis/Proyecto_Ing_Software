@@ -1,13 +1,18 @@
-# Arranque completo:  docker compose up --build   →  http://localhost:3000
+# Arranque completo:
+#   cp .env.example .env   (y completar DB_PASSWORD y JWT_SECRET)
+#   docker compose up --build   →  http://localhost:3000
+# Ninguna credencial vive en este archivo: se leen de .env (ignorado por Git).
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: taskflow
       POSTGRES_USER: taskflow
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-taskflow}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD en el archivo .env}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data      # los datos sobreviven a docker compose down
+    networks: [backend]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U taskflow -d taskflow"]
       interval: 5s
@@ -16,22 +21,31 @@ services:
 
   api:
     build: ./backend
+    restart: unless-stopped
     environment:
       DB_URL: jdbc:postgresql://db:5432/taskflow
       DB_USER: taskflow
-      DB_PASSWORD: ${DB_PASSWORD:-taskflow}
-      JWT_SECRET: ${JWT_SECRET:-cambia-esta-clave-en-produccion-de-al-menos-32-caracteres}
-      SEED: "true"
+      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD en el archivo .env}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET (32+ caracteres) en el archivo .env}
+      SEED: ${SEED:-false}
+    networks: [backend, edge]
     depends_on:
       db:
         condition: service_healthy
 
   web:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "3000:8080"
+    networks: [edge]
     depends_on:
       - api
+
+networks:
+  backend:
+    internal: true        # la base de datos no tiene salida ni entrada desde fuera de Docker
+  edge: {}
 
 volumes:
   pgdata:

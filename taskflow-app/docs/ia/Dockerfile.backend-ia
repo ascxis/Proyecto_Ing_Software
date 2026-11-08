@@ -1,0 +1,37 @@
+# Dockerfile del backend tal como lo entregó la IA (sesión del 8-nov-2026, sin modificar). Solo para comparar su peso en CI.
+# syntax=docker/dockerfile:1
+
+# ---------- Etapa 1: build con Maven ----------
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /app
+
+# Copiamos solo el pom primero para aprovechar la caché de capas:
+# si no cambian las dependencias, no se vuelven a descargar.
+COPY pom.xml .
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -q dependency:go-offline
+
+# Ahora el código fuente y el empaquetado del jar
+COPY src ./src
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -q package -DskipTests
+
+# ---------- Etapa 2: runtime ligero (solo JRE) ----------
+FROM eclipse-temurin:21-jre-alpine AS runtime
+
+# Usuario sin privilegios (no ejecutar como root)
+RUN addgroup -S app && adduser -S app -G app
+WORKDIR /app
+
+# Copiamos solo el jar generado (ajusta el nombre si tu artifactId es distinto;
+# el comodín evita depender de la versión)
+COPY --from=build /app/target/*.jar app.jar
+RUN chown app:app app.jar
+USER app
+
+EXPOSE 8080
+
+# Ajustes de memoria conscientes del contenedor
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC"
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

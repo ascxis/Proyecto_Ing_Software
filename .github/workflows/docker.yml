@@ -1,0 +1,102 @@
+name: Docker (imágenes y compose)
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['taskflow-app/**', '.github/workflows/docker.yml']
+  push:
+    branches: [main]
+    paths: ['taskflow-app/**', '.github/workflows/docker.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  imagenes:
+    name: Construir, medir y orquestar
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: taskflow-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir las imágenes multietapa
+        run: |
+          docker build -t taskflow-api:ci backend
+          docker build -t taskflow-web:ci frontend
+
+      - name: "Peso de las imágenes (MB) — sin multietapa, Dockerfile de la IA y el nuestro"
+        run: |
+          docker build -t taskflow-api:naive -f docs/ia/Dockerfile.backend-monoetapa backend
+          docker build -t taskflow-api:ia -f docs/ia/Dockerfile.backend-ia backend
+          {
+            echo "## Peso de las imágenes"
+            echo '```'
+            docker images --format '{{.Repository}}:{{.Tag}}  {{.Size}}' | grep -E 'taskflow-(api|web):(ci|ia|naive)'
+            echo '```'
+            for t in naive ia ci; do printf '%s %s bytes\n' "taskflow-api:$t" "$(docker image inspect taskflow-api:$t --format '{{.Size}}')"; done
+            docker image inspect taskflow-web:ci --format 'taskflow-web:ci {{.Size}} bytes'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: La imagen final corre con un usuario que no es root
+        run: |
+          for img in taskflow-api:ci taskflow-web:ci; do
+            uid=$(docker run --rm --entrypoint id "$img" -u)
+            echo "$img -> uid $uid"
+            test "$uid" != "0" || { echo "::error::$img corre como root"; exit 1; }
+          done
+
+      - name: Levantar con docker compose (secretos generados, nunca escritos en el repositorio)
+        run: |
+          printf 'DB_PASSWORD=%s\nJWT_SECRET=%s\nSEED=false\n' "$(openssl rand -hex 16)" "$(openssl rand -hex 32)" > .env
+          docker compose up -d --build --wait
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{"correo":"x@x.co","clave":"incorrecta"}') || true
+            [ "$code" = "401" ] && break; sleep 2
+          done
+          echo "login inválido -> HTTP $code"; test "$code" = "401"
+          docker compose ps
+
+      - name: Crear un usuario, destruir los contenedores y comprobar que los datos persisten
+        run: |
+          curl -fs -X POST localhost:3000/api/auth/register -H 'Content-Type: application/json' \
+            -d '{"nombre":"Persistente","correo":"persistente@test.co","clave":"secreto123"}' > /dev/null
+          docker compose down          # sin -v: el volumen pgdata se conserva
+          docker volume ls | grep pgdata
+          docker compose up -d --wait
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{"correo":"persistente@test.co","clave":"secreto123"}') || true
+            [ "$code" = "200" ] && break; sleep 2
+          done
+          echo "login tras recrear los contenedores -> HTTP $code"; test "$code" = "200"
+
+      - name: La base de datos no es alcanzable desde fuera de la red interna
+        run: |
+          if (echo > /dev/tcp/127.0.0.1/5432) 2>/dev/null; then echo "::error::PostgreSQL está publicado en el host"; exit 1; fi
+          echo "puerto 5432 no publicado: correcto"
+
+      - name: CD — despliegue sano con healthcheck (script de deploy.yml, imagen local)
+        run: |
+          docker compose down -v
+          docker tag taskflow-api:ci taskflow-api:buena
+          bash despliegue/desplegar.sh taskflow-api buena
+
+      - name: CD — despliegue roto, el healthcheck falla y se hace rollback a la versión estable
+        run: |
+          printf 'FROM taskflow-api:ci\nENTRYPOINT ["false"]\n' | docker build -t taskflow-api:rota -
+          set +e
+          bash despliegue/desplegar.sh taskflow-api rota | tee rollback.log
+          estado=${PIPESTATUS[0]}
+          set -e
+          echo "código de salida del despliegue roto: $estado"
+          test "$estado" -ne 0
+          grep -q "ROLLBACK" rollback.log
+          grep -q "Versión anterior restaurada y saludable" rollback.log
+
+      - name: Limpiar
+        if: always()
+        run: |
+          docker compose down -v || true
+          docker rm -f pg api || true

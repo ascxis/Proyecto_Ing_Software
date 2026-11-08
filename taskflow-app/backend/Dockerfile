@@ -7,10 +7,10 @@ COPY src ./src
 RUN mvn -q -B package -DskipTests
 
 # Etapa 2: imagen mínima de ejecución
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/taskflow-1.0.0.jar app.jar
-RUN useradd --system --uid 10001 --no-create-home app
+RUN addgroup -S -g 10001 app && adduser -S -u 10001 -G app -H app
 USER app
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

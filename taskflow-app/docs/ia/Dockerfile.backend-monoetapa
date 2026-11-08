@@ -1,0 +1,8 @@
+# Referencia: la misma aplicación SIN construcción multietapa (todo en una imagen con Maven y JDK).
+FROM maven:3.9-eclipse-temurin-21
+WORKDIR /app
+COPY pom.xml .
+RUN mvn -q -B dependency:go-offline
+COPY src ./src
+RUN mvn -q -B package -DskipTests
+ENTRYPOINT ["sh","-c","java -jar target/taskflow-1.0.0.jar"]

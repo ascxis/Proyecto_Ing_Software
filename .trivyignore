@@ -1,0 +1,11 @@
+# Exclusiones justificadas. Cada entrada lleva el CVE, el motivo y la condición para volver a evaluarla.
+# Revisar en cada actualización de Spring Framework (Boot 4 / Framework 7.0.9+).
+
+# spring-webmvc 6.2.19 — XsltView: SSRF/RCE. Exige una aplicación que use XsltView en Spring MVC con un
+# mapeo "/**" que resuelva vistas. TaskFlow es una API REST (solo @RestController, sin motor de vistas ni XSLT).
+# La corrección de la rama 6.2 es solo para soporte empresarial; la de código abierto exige Spring Framework 7.
+CVE-2026-47884
+
+# spring-webmvc 6.2.19 — corrupción del flujo Server-Sent Events al renderizar fragmentos de vista.
+# Exige enviar fragmentos de vista por SSE con datos controlados por un atacante. TaskFlow no usa SSE ni vistas.
+CVE-2026-47890
