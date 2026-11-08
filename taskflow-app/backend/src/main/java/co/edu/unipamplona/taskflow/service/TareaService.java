@@ -45,13 +45,26 @@ public class TareaService {
         return usuarios.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     }
 
+    // Helpers privados (refactor preventivo, guía 15): sin @Transactional; se ejecutan dentro de la transacción del método público.
+    private static void exigirTitulo(String titulo) {
+        if (titulo == null || titulo.isBlank()) throw new ApiException(HttpStatus.BAD_REQUEST, "El título es obligatorio");
+    }
+
+    private static void exigirCreador(Proyecto p, Long uid, String accion) {
+        if (!p.getCreador().getId().equals(uid)) throw new ApiException(HttpStatus.FORBIDDEN, "Solo el creador del proyecto puede " + accion + " tareas");
+    }
+
+    private void notificarAsignacion(Usuario destino, Tarea t, Proyecto p) {
+        notificaciones.crear(destino, "Se te asignó la tarea \"" + t.getTitulo() + "\" en " + p.getNombre());
+    }
+
     @Transactional
     public TareaDto crear(Long uid, Long pid, TareaReq r) {
         Proyecto p = proyectos.cargar(pid, uid);
-        if (r.titulo() == null || r.titulo().isBlank()) throw new ApiException(HttpStatus.BAD_REQUEST, "El título es obligatorio");
+        exigirTitulo(r.titulo());
         Usuario asignado = asignable(p, r.asignadoId());
         Tarea t = tareas.save(new Tarea(p, r.titulo(), r.descripcion(), Mapeo.prioridad(r.prioridad()), Mapeo.fecha(r.fechaLimite()), asignado));
-        if (asignado != null) notificaciones.crear(asignado, "Se te asignó la tarea \"" + t.getTitulo() + "\" en " + p.getNombre());
+        if (asignado != null) notificarAsignacion(asignado, t, p);
         return Mapeo.tarea(t);
     }
 
@@ -114,20 +127,19 @@ public class TareaService {
     public TareaDto editar(Long uid, Long tid, TareaReq r) {
         Tarea t = cargar(tid, uid);
         Proyecto p = t.getProyecto();
-        if (!p.getCreador().getId().equals(uid)) throw new ApiException(HttpStatus.FORBIDDEN, "Solo el creador del proyecto puede editar tareas");
+        exigirCreador(p, uid, "editar");
         Long anterior = t.getAsignado() == null ? null : t.getAsignado().getId();
         Usuario nuevo = r.asignadoId() == null ? t.getAsignado() : asignable(p, r.asignadoId());   // "" quita la asignación
         t.actualizar(r.titulo(), r.descripcion(), r.prioridad() == null ? null : Mapeo.prioridad(r.prioridad()), Mapeo.fecha(r.fechaLimite()));
         t.setAsignado(nuevo);
-        if (nuevo != null && !nuevo.getId().equals(anterior))
-            notificaciones.crear(nuevo, "Se te asignó la tarea \"" + t.getTitulo() + "\" en " + p.getNombre());
+        if (nuevo != null && !nuevo.getId().equals(anterior)) notificarAsignacion(nuevo, t, p);
         return Mapeo.tarea(tareas.saveAndFlush(t));
     }
 
     @Transactional
     public void eliminar(Long uid, Long tid) {
         Tarea t = cargar(tid, uid);
-        if (!t.getProyecto().getCreador().getId().equals(uid)) throw new ApiException(HttpStatus.FORBIDDEN, "Solo el creador del proyecto puede eliminar tareas");
+        exigirCreador(t.getProyecto(), uid, "eliminar");
         tareas.delete(t);
     }
 }
