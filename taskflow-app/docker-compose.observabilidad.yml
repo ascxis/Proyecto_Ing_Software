@@ -19,6 +19,7 @@ services:
     command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=7d"]   # retención de métricas: 7 días
     volumes:
       - ./observabilidad/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observabilidad/alertas.yml:/etc/prometheus/alertas.yml:ro
       - promdata:/prometheus
     ports:
       - "127.0.0.1:9090:9090"

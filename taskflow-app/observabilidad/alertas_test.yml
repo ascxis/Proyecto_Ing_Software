@@ -1,0 +1,55 @@
+# Pruebas unitarias de las reglas con promtool: series sintéticas, sin Prometheus ni API.
+rule_files:
+  - alertas.yml
+evaluation_interval: 1m
+tests:
+  - name: 9 % de errores 5xx sostenidos dispara la alerta tras 5 minutos
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{status="200",uri="/api/x"}'
+        values: '0+100x30'
+      - series: 'http_server_requests_seconds_count{status="500",uri="/api/x"}'
+        values: '0+10x30'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: TaskFlowErrores5xx
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: TaskFlowErrores5xx
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "Más del 1 % de las peticiones responde 5xx durante 5 minutos"
+              runbook: "taskflow-app/docs/runbooks/Runbook_base_de_datos.md"
+  - name: tráfico sano (0 % de 5xx) no dispara ninguna alerta
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{status="200",uri="/api/x"}'
+        values: '0+100x30'
+      - series: 'http_server_requests_seconds_count{status="500",uri="/api/x"}'
+        values: '0+0x30'
+      - series: 'up{job="taskflow-api"}'
+        values: '1x30'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: TaskFlowErrores5xx
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: TaskFlowApiCaida
+        exp_alerts: []
+  - name: la API caída dispara TaskFlowApiCaida
+    interval: 1m
+    input_series:
+      - series: 'up{job="taskflow-api"}'
+        values: '1 1 1 0x20'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: TaskFlowApiCaida
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: taskflow-api
+            exp_annotations:
+              summary: "Prometheus no puede leer las métricas de la API desde hace 1 minuto"
+              runbook: "taskflow-app/docs/runbooks/Runbook_base_de_datos.md"
