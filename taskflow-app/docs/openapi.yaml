@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: TaskFlow API
   version: 0.2.0
-  license: { name: Uso académico (Universidad de Pamplona) }
+  license: { name: Uso académico (Universidad de Pamplona), url: "https://github.com/ascxis/Proyecto_Ing_Software" }
   description: Contrato de la API REST de TaskFlow (diseño Design-First, FPI-22). Identificadores como texto.
 servers:
   - url: http://localhost:8080

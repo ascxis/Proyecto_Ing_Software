@@ -61,7 +61,7 @@ jobs:
         run: |
           set -o pipefail
           npx --yes @redocly/cli@1.25.0 lint taskflow-app/docs/openapi.yaml --config redocly.yaml --format=stylish | tee taskflow-app/pruebas-carga/openapi-lint.txt
-          ! grep -q 'warning' taskflow-app/pruebas-carga/openapi-lint.txt  # el contrato debe quedar sin advertencias
+          if grep -q 'warning' taskflow-app/pruebas-carga/openapi-lint.txt; then echo 'El contrato tiene advertencias'; exit 1; fi
       - name: Ejecutar la colección de Postman con newman
         run: |
           set -o pipefail
