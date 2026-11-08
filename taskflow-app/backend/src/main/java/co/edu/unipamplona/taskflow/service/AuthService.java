@@ -39,5 +39,16 @@ public class AuthService {
         return new SesionDto(jwt.generar(u.getId()), Mapeo.usuario(u));
     }
 
-    public List<UsuarioDto> listar() { return usuarios.findAll().stream().map(Mapeo::usuario).toList(); }
+    /** Ley 1581: el correo completo solo se entrega a su titular; de los demás usuarios se devuelve enmascarado (a***@dominio). */
+    public List<UsuarioDto> listar(Long solicitanteId) {
+        return usuarios.findAll().stream().map(u -> u.getId().equals(solicitanteId)
+                ? Mapeo.usuario(u)
+                : new UsuarioDto(String.valueOf(u.getId()), u.getNombre(), enmascarar(u.getCorreo()), u.getCargo())).toList();
+    }
+
+    static String enmascarar(String correo) {
+        if (correo == null) return null;
+        int at = correo.indexOf('@');
+        return at <= 0 ? "***" : correo.charAt(0) + "***" + correo.substring(at);
+    }
 }

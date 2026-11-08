@@ -4,6 +4,7 @@ import co.edu.unipamplona.taskflow.dto.Dto.*;
 import co.edu.unipamplona.taskflow.service.AuthService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,5 +21,5 @@ public class AuthController {
     public SesionDto iniciar(@RequestBody LoginReq r) { return auth.iniciar(r); }
 
     @GetMapping("/usuarios")
-    public List<UsuarioDto> usuarios() { return auth.listar(); }
+    public List<UsuarioDto> usuarios(Authentication a) { return auth.listar(Actual.id(a)); }
 }
