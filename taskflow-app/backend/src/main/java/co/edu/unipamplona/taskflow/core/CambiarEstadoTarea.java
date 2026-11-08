@@ -22,7 +22,7 @@ public class CambiarEstadoTarea {
         if (t.estado() == nuevo) return t;                       // mismo estado: no notifica de nuevo
         TareaVista guardada = tareas.guardarEstado(tareaId, nuevo);
         if (t.creadorProyectoId() != usuarioId)
-            notificador.avisar(t.creadorProyectoId(), t.asignadoNombre() + " cambió \"" + t.titulo() + "\" a " + nuevo);
+            notificador.avisar(t.creadorProyectoId(), t.asignadoNombre() + " cambió \"" + t.titulo() + "\" a " + nuevo.texto());
         return guardada;
     }
 }
