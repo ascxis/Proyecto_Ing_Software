@@ -101,8 +101,11 @@ jobs:
           echo "Sin datos personales en logs, trazas ni métricas."
       - name: Las métricas no se exponen fuera de la red interna
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' localhost:3000/actuator/prometheus); echo "vía nginx: $code"
-          test "$code" != "200"
+          # nginx responde 200 con el index.html de la SPA para rutas desconocidas; lo que importa es que NO sean métricas.
+          curl -s localhost:3000/actuator/prometheus > /tmp/via-nginx.txt
+          if grep -q "# HELP" /tmp/via-nginx.txt; then echo "¡las métricas salen por el puerto público!"; exit 1; fi
+          echo "El puerto público (3000) no entrega métricas: $(head -c 60 /tmp/via-nginx.txt | tr -d '\n')"
+          # y la API, aun alcanzada directamente, las niega sin METRICAS_ABIERTAS (probado en ObservabilidadTest)
       - name: Captura del dashboard
         run: |
           npx -y playwright@1.49.1 install --with-deps chromium >/dev/null 2>&1
