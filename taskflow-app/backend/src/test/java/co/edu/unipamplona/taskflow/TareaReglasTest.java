@@ -40,8 +40,8 @@ class TareaReglasTest {
         if (s != null) b.header("Authorization", "Bearer " + s.token());
         if (cuerpo != null) b.content(json.writeValueAsString(cuerpo));
         var res = mvc.perform(b).andReturn().getResponse();
-        assertEquals(esperado, res.getStatus(), metodo + " " + url + " -> " + res.getContentAsString());
-        String texto = res.getContentAsString();
+        assertEquals(esperado, res.getStatus(), metodo + " " + url + " -> " + res.getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        String texto = res.getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         return json.readTree(texto.isEmpty() ? "{}" : texto);
     }
 
