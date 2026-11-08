@@ -73,6 +73,26 @@ jobs:
           if (echo > /dev/tcp/127.0.0.1/5432) 2>/dev/null; then echo "::error::PostgreSQL está publicado en el host"; exit 1; fi
           echo "puerto 5432 no publicado: correcto"
 
+      - name: CD — despliegue sano con healthcheck (script de deploy.yml, imagen local)
+        run: |
+          docker compose down -v
+          docker tag taskflow-api:ci taskflow-api:buena
+          bash despliegue/desplegar.sh taskflow-api buena
+
+      - name: CD — despliegue roto, el healthcheck falla y se hace rollback a la versión estable
+        run: |
+          printf 'FROM taskflow-api:ci\nENTRYPOINT ["false"]\n' | docker build -t taskflow-api:rota -
+          set +e
+          bash despliegue/desplegar.sh taskflow-api rota | tee rollback.log
+          estado=${PIPESTATUS[0]}
+          set -e
+          echo "código de salida del despliegue roto: $estado"
+          test "$estado" -ne 0
+          grep -q "ROLLBACK" rollback.log
+          grep -q "Versión anterior restaurada y saludable" rollback.log
+
       - name: Limpiar
         if: always()
-        run: docker compose down -v
+        run: |
+          docker compose down -v || true
+          docker rm -f pg api || true
