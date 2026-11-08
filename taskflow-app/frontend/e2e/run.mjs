@@ -100,6 +100,17 @@ await caso('E2E-14 el creador crea una tarea asignada desde la interfaz y aparec
   await page.getByRole('button', { name: 'Crear tarea' }).click();
   await page.getByRole('region', { name: 'Pendiente' }).getByText('Redactar manual').waitFor();
 });
+await caso('E2E-15 XSS: un título con HTML malicioso se muestra como texto y no ejecuta código', async (page) => {
+  const malicioso = '<img src=x onerror="window.__xss=1">';
+  await entrar(page, 'admin@gmail.com', 'admin123'); await abrirP1(page);
+  await page.getByRole('button', { name: '+ Nueva tarea' }).click();
+  await page.getByLabel('Título').fill(malicioso);
+  await page.getByRole('button', { name: 'Crear tarea' }).click();
+  await page.getByRole('region', { name: 'Pendiente' }).getByText(malicioso, { exact: true }).waitFor();   // visible como texto literal
+  await page.waitForTimeout(500);                                                                         // margen para que un onerror se ejecutara
+  assert.equal(await page.evaluate(() => window.__xss), undefined, 'se ejecutó el código del título');
+  assert.equal(await page.locator('img[src="x"]').count(), 0, 'el título se interpretó como HTML');
+});
 
 await browser.close(); srv.kill();
 const ok = resultados.filter((r) => r[1]).length;
