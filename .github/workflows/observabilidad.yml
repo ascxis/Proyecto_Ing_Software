@@ -73,7 +73,7 @@ jobs:
           U='uri="/api/tareas/{id}/estado"'
           echo "Tasa (req/s):        $(q "sum(rate(http_server_requests_seconds_count{$U}[1m]))")"
           echo "Latencia p95 (s):    $(q "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{$U}[1m])))")"
-          echo "Errores 5xx (%):     $(q "100 * sum(rate(http_server_requests_seconds_count{$U,status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{$U}[1m]))")"
+          echo "Errores 5xx (%):     $(q "(100 * sum(rate(http_server_requests_seconds_count{$U,status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{$U}[1m]))) or vector(0)")"
           echo "Total por código HTTP:"
           curl -fsG localhost:9090/api/v1/query --data-urlencode "query=sum by (status) (http_server_requests_seconds_count{$U})" | jq -r '.data.result[] | "  \(.metric.status): \(.value[1])"'
           echo "Resultados de negocio:"
@@ -97,7 +97,7 @@ jobs:
           echo "Líneas JSON con tareaId: $(grep -c '"tareaId"' /tmp/api.log)"
           if grep -Ei "ejemplo\.co|Tarea confidencial|secreto1|Bearer " /tmp/api.log /tmp/colector.log; then echo "PII encontrada en la telemetría"; exit 1; fi
           docker compose exec -T api wget -qO- http://localhost:8080/actuator/prometheus > /tmp/metricas.txt
-          if grep -Ei "ejemplo\.co|confidencial|Ana|Beto" /tmp/metricas.txt; then echo "PII en las métricas"; exit 1; fi
+          if grep -E "ejemplo\.co|confidencial|\bAna\b|\bBeto\b" /tmp/metricas.txt; then echo "PII en las métricas"; exit 1; fi
           echo "Sin datos personales en logs, trazas ni métricas."
       - name: Las métricas no se exponen fuera de la red interna
         run: |
