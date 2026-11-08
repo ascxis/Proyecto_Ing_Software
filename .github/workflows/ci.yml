@@ -107,3 +107,18 @@ jobs:
           -Dsonar.sources=src/main/java,../frontend/src,../../taskflow
           -Dsonar.coverage.exclusions=../frontend/**,../../taskflow/**,**/DatosDemo.java,**/TaskflowApplication.java
           -Dsonar.exclusions=**/node_modules/**,**/dist/**,../../taskflow/base.json
+
+  resultado:
+    # Este es el único chequeo que exige la regla de protección de main («Build, Lint y Pruebas»).
+    # Se ejecuta siempre y solo queda en verde si las tres etapas, incluido el Quality Gate, pasaron:
+    # así la puerta de calidad bloquea de verdad la fusión (un job «skipped» no bloquearía).
+    name: Build, Lint y Pruebas
+    needs: [lint, test, analysis]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Las tres etapas deben haber pasado
+        run: |
+          echo "lint=${{ needs.lint.result }} test=${{ needs.test.result }} analysis=${{ needs.analysis.result }}"
+          [ "${{ needs.lint.result }}" = "success" ] && [ "${{ needs.test.result }}" = "success" ] && [ "${{ needs.analysis.result }}" = "success" ]
