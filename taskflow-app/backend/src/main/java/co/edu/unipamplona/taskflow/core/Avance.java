@@ -5,6 +5,6 @@ public final class Avance {
     private Avance() { }
 
     public static int porcentaje(long completadas, long total) {
-        throw new UnsupportedOperationException("pendiente");   // fase ROJA: la prueba debe fallar
+        return total == 0 ? 0 : (int) Math.round(completadas * 100.0 / total);   // fase VERDE: lo mínimo que hace pasar las pruebas
     }
 }
