@@ -40,7 +40,8 @@ jobs:
         working-directory: taskflow-app/backend
         run: |
           IMG="${IMAGEN,,}"
-          docker build -t "$IMG:${{ steps.meta.outputs.tag }}" -t "$IMG:latest" .
+          docker build --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            -t "$IMG:${{ steps.meta.outputs.tag }}" -t "$IMG:latest" .
           docker push "$IMG:${{ steps.meta.outputs.tag }}"
           docker push "$IMG:latest"
 
