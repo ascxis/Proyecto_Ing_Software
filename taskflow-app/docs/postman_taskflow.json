@@ -1,0 +1,346 @@
+{
+ "info": {
+  "name": "TaskFlow API (FPI-22)",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "variable": [
+  {
+   "key": "base",
+   "value": "http://localhost:8080"
+  }
+ ],
+ "item": [
+  {
+   "name": "1. Registrar Ana (201)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('201 y token',()=>{pm.response.to.have.status(201);pm.expect(pm.response.json().token).to.be.a('string');});",
+       "pm.collectionVariables.set('tokenAna',pm.response.json().token);pm.collectionVariables.set('idAna',pm.response.json().usuario.id);"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": "{{base}}/api/auth/register",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"nombre\": \"Ana\", \"correo\": \"ana-{{$timestamp}}@pm.test\", \"clave\": \"secreto1\"}"
+    }
+   }
+  },
+  {
+   "name": "2. Registrar Beto (201)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('201',()=>pm.response.to.have.status(201));",
+       "pm.collectionVariables.set('tokenBeto',pm.response.json().token);pm.collectionVariables.set('idBeto',pm.response.json().usuario.id);"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": "{{base}}/api/auth/register",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"nombre\": \"Beto\", \"correo\": \"beto-{{$timestamp}}@pm.test\", \"clave\": \"secreto1\"}"
+    }
+   }
+  },
+  {
+   "name": "3. Login con clave incorrecta (401)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('401',()=>pm.response.to.have.status(401));"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": "{{base}}/api/auth/login",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"correo\": \"nadie@pm.test\", \"clave\": \"mala\"}"
+    }
+   }
+  },
+  {
+   "name": "4. Sin token (401)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('401 sin JWT',()=>pm.response.to.have.status(401));"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": "{{base}}/api/proyectos"
+   }
+  },
+  {
+   "name": "5. Crear proyecto (201)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('201 y avance numérico',()=>{pm.response.to.have.status(201);pm.expect(pm.response.json().avance).to.be.a('number');});",
+       "pm.collectionVariables.set('idProyecto',pm.response.json().id);"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{tokenAna}}"
+     }
+    ],
+    "url": "{{base}}/api/proyectos",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"nombre\": \"Proyecto Postman\", \"descripcion\": \"d\", \"fechaLimite\": \"2026-12-31\", \"miembrosIds\": [\"{{idBeto}}\"]}"
+    }
+   }
+  },
+  {
+   "name": "6. Crear tarea asignada a Beto (201)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('201 y versión 0',()=>{pm.response.to.have.status(201);pm.expect(pm.response.json().version).to.eql(0);});",
+       "pm.collectionVariables.set('idTarea',pm.response.json().id);"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{tokenAna}}"
+     }
+    ],
+    "url": "{{base}}/api/proyectos/{{idProyecto}}/tareas",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"titulo\": \"Tarea\", \"descripcion\": \"x\", \"prioridad\": \"ALTA\", \"fechaLimite\": \"2026-12-01\", \"asignadoId\": \"{{idBeto}}\"}"
+    }
+   }
+  },
+  {
+   "name": "7. No asignado cambia estado (403, RN-02)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('403',()=>pm.response.to.have.status(403));"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "PATCH",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{tokenAna}}"
+     }
+    ],
+    "url": "{{base}}/api/tareas/{{idTarea}}/estado",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"estado\": \"COMPLETADA\", \"version\": 0}"
+    }
+   }
+  },
+  {
+   "name": "8. Asignado cambia estado (200)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('200 y EN_PROCESO',()=>{pm.response.to.have.status(200);pm.expect(pm.response.json().estado).to.eql('EN_PROCESO');});"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "PATCH",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{tokenBeto}}"
+     }
+    ],
+    "url": "{{base}}/api/tareas/{{idTarea}}/estado",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"estado\": \"EN_PROCESO\", \"version\": 0}"
+    }
+   }
+  },
+  {
+   "name": "9. Versión obsoleta (409)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('409',()=>pm.response.to.have.status(409));"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "PATCH",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{tokenBeto}}"
+     }
+    ],
+    "url": "{{base}}/api/tareas/{{idTarea}}/estado",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"estado\": \"COMPLETADA\", \"version\": 0}"
+    }
+   }
+  },
+  {
+   "name": "10. Estado inválido (400)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('400',()=>pm.response.to.have.status(400));"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "PATCH",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{tokenBeto}}"
+     }
+    ],
+    "url": "{{base}}/api/tareas/{{idTarea}}/estado",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"estado\": \"TERMINADA\"}"
+    }
+   }
+  },
+  {
+   "name": "11. Notificaciones de Ana (200)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('200 y 1 aviso',()=>{pm.response.to.have.status(200);pm.expect(pm.response.json().length).to.be.above(0);});"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{tokenAna}}"
+     }
+    ],
+    "url": "{{base}}/api/notificaciones"
+   }
+  }
+ ]
+}

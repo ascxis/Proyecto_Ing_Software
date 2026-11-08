@@ -1,0 +1,236 @@
+{
+  "consumer": {
+    "name": "TaskFlowFrontend"
+  },
+  "provider": {
+    "name": "TaskFlowAPI"
+  },
+  "interactions": [
+    {
+      "description": "login correcto devuelve el JWT y el usuario",
+      "request": {
+        "method": "POST",
+        "path": "/api/auth/login",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "correo": "ana-pact@test.co",
+          "clave": "secreto1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "token": "eyJ.ejemplo.jwt",
+          "usuario": {
+            "id": "1",
+            "nombre": "Ana",
+            "correo": "ana-pact@test.co"
+          }
+        },
+        "matchingRules": {
+          "body": {
+            "$.token": {
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ],
+              "combine": "AND"
+            },
+            "$.usuario.id": {
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ],
+              "combine": "AND"
+            }
+          }
+        }
+      },
+      "providerStates": [
+        {
+          "name": "usuario Ana registrado"
+        }
+      ]
+    },
+    {
+      "description": "el asignado cambia el estado",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/tareas/1/estado",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer token-de-ejemplo"
+        },
+        "body": {
+          "estado": "EN_PROCESO",
+          "version": 0
+        },
+        "generators": {
+          "path": {
+            "type": "ProviderState",
+            "expression": "/api/tareas/${tareaId}/estado"
+          },
+          "header": {
+            "Authorization": {
+              "type": "ProviderState",
+              "expression": "Bearer ${token}"
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "estado": "EN_PROCESO",
+          "version": 1,
+          "id": "1"
+        },
+        "matchingRules": {
+          "body": {
+            "$.version": {
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ],
+              "combine": "AND"
+            },
+            "$.id": {
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ],
+              "combine": "AND"
+            }
+          }
+        }
+      },
+      "providerStates": [
+        {
+          "name": "tarea asignada a Beto"
+        }
+      ]
+    },
+    {
+      "description": "un usuario no asignado recibe 403 (RN-02)",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/tareas/1/estado",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer token-de-ejemplo"
+        },
+        "body": {
+          "estado": "COMPLETADA",
+          "version": 0
+        },
+        "generators": {
+          "path": {
+            "type": "ProviderState",
+            "expression": "/api/tareas/${tareaId}/estado"
+          },
+          "header": {
+            "Authorization": {
+              "type": "ProviderState",
+              "expression": "Bearer ${token}"
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "error": "Solo el asignado puede cambiar el estado"
+        },
+        "matchingRules": {
+          "body": {
+            "$.error": {
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ],
+              "combine": "AND"
+            }
+          }
+        }
+      },
+      "providerStates": [
+        {
+          "name": "tarea asignada a Beto, consulta Ana"
+        }
+      ]
+    },
+    {
+      "description": "una versión obsoleta recibe 409",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/tareas/1/estado",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer token-de-ejemplo"
+        },
+        "body": {
+          "estado": "COMPLETADA",
+          "version": 0
+        },
+        "generators": {
+          "path": {
+            "type": "ProviderState",
+            "expression": "/api/tareas/${tareaId}/estado"
+          },
+          "header": {
+            "Authorization": {
+              "type": "ProviderState",
+              "expression": "Bearer ${token}"
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": "La tarea fue modificada por otra persona"
+        },
+        "matchingRules": {
+          "body": {
+            "$.error": {
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ],
+              "combine": "AND"
+            }
+          }
+        }
+      },
+      "providerStates": [
+        {
+          "name": "tarea asignada a Beto con versión avanzada"
+        }
+      ]
+    },
+    {
+      "description": "sin token la API responde 401",
+      "request": {
+        "method": "GET",
+        "path": "/api/tareas",
+        "headers": {}
+      },
+      "response": {
+        "status": 401
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  }
+}

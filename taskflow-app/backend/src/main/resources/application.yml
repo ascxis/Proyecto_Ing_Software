@@ -1,0 +1,21 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/taskflow}
+    username: ${DB_USER:taskflow}
+    password: ${DB_PASSWORD:taskflow}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+taskflow:
+  jwt:
+    secret: ${JWT_SECRET:cambia-esta-clave-en-produccion-de-al-menos-32-caracteres}
+    ttl-hours: 24
+  seed: ${SEED:true}

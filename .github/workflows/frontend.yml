@@ -1,0 +1,28 @@
+name: Frontend (React)
+on:
+  pull_request:
+    branches: [main]
+    paths: ['taskflow-app/frontend/**']
+  push:
+    branches: [main]
+    paths: ['taskflow-app/frontend/**']
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Tipos y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Instalar dependencias (sin scripts de ciclo de vida)
+        working-directory: taskflow-app/frontend
+        run: npm install --ignore-scripts
+      - name: Comprobar tipos
+        working-directory: taskflow-app/frontend
+        run: ./node_modules/.bin/tsc --noEmit
+      - name: Build
+        working-directory: taskflow-app/frontend
+        run: node build.mjs

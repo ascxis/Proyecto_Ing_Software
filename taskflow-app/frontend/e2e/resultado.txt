@@ -1,0 +1,4 @@
+  ok   E2E-13 sin token la API responde 401
+  ok   E2E-14 el creador crea una tarea asignada desde la interfaz y aparece en Pendiente
+
+Resultado: 14/14 pruebas de extremo a extremo aprobadas
