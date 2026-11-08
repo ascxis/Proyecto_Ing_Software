@@ -30,4 +30,5 @@ jobs:
           -Dsonar.organization=ascxis
           -Dsonar.projectKey=ascxis_Proyecto_Ing_Software
           -Dsonar.sources=src/main/java,../frontend/src,../../taskflow
+          -Dsonar.coverage.exclusions=../frontend/**,../../taskflow/**,**/DatosDemo.java,**/TaskflowApplication.java
           -Dsonar.exclusions=**/node_modules/**,**/dist/**,../../taskflow/base.json
