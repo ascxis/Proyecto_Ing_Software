@@ -95,6 +95,31 @@ class TareaReglasTest {
         assertEquals("PENDIENTE", lista.get(0).get("estado").asText());
     }
 
+    /** II-04: dos escrituras que compiten por la misma tarea con la misma versión: una gana (200) y la otra recibe 409. */
+    @Test
+    void dosCambiosConcurrentes_conLaMismaVersion_uno200_y_uno409_sinAvisoDuplicado() throws Exception {
+        var salida = new java.util.concurrent.CountDownLatch(1);
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            java.util.function.Function<String, java.util.concurrent.Future<Integer>> lanzar = estado -> pool.submit(() -> {
+                salida.await();
+                return mvc.perform(request(HttpMethod.PATCH, "/api/tareas/" + tareaId + "/estado")
+                        .contentType(MediaType.APPLICATION_JSON).header("Authorization", "Bearer " + beto.token())
+                        .content(json.writeValueAsString(Map.of("estado", estado, "version", 0))))
+                        .andReturn().getResponse().getStatus();
+            });
+            var a = lanzar.apply("EN_PROCESO"); var b = lanzar.apply("COMPLETADA");
+            salida.countDown();
+            int sa = a.get(20, java.util.concurrent.TimeUnit.SECONDS), sb = b.get(20, java.util.concurrent.TimeUnit.SECONDS);
+            assertEquals(List.of(200, 409), List.of(Math.min(sa, sb), Math.max(sa, sb)), "estados HTTP: " + sa + " y " + sb);
+            String ganador = sa == 200 ? "EN_PROCESO" : "COMPLETADA";
+            JsonNode tarea = llamar("GET", "/api/tareas", beto, null, 200).get(0);
+            assertEquals(ganador, tarea.get("estado").asText());
+            assertEquals(1, tarea.get("version").asInt());
+            assertEquals(1, llamar("GET", "/api/notificaciones", ana, null, 200).size(), "un solo aviso para el creador");
+        } finally { pool.shutdownNow(); }
+    }
+
     @Test
     void estadoInvalido_recibe400() throws Exception {
         llamar("PATCH", "/api/tareas/" + tareaId + "/estado", beto, Map.of("estado", "TERMINADA"), 400);

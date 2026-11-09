@@ -72,4 +72,9 @@ class CambiarEstadoTareaTest {
     @Test void sinVersion_peroNoAsignado_siguiendoSiendoProhibido() {                    // no se revela nada por omitir la versión
         assertEquals(ReglaNegocioException.Tipo.PROHIBIDO, error(() -> new CambiarEstadoTarea(new TareasMem(), new NotifMem()).ejecutar(1, 1, "EN_PROCESO", null)));
     }
+    @Test void versionObsoleta_clienteAtrasadoRespectoDeLaBase_esConflicto_sinGuardar() {     // II-04: mata el mutante «!=» -> «>»
+        var t = new TareasMem(); t.t = new TareaVista(1, "Diseñar login", 2L, "Ana", 1L, EstadoTarea.PENDIENTE, 1);
+        assertEquals(ReglaNegocioException.Tipo.CONFLICTO, error(() -> new CambiarEstadoTarea(t, new NotifMem()).ejecutar(2, 1, "EN_PROCESO", 0L)));
+        assertEquals(0, t.guardados);
+    }
 }
