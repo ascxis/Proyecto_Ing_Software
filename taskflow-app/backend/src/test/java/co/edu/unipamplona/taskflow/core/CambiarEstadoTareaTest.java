@@ -61,7 +61,7 @@ class CambiarEstadoTareaTest {
     }
     @Test void transicionesLibresEntreLosTresEstados() {                                // RN-09
         var t = new TareasMem(); var c = new CambiarEstadoTarea(t, new NotifMem());
-        c.ejecutar(2, 1, "COMPLETADA", null); c.ejecutar(2, 1, "PENDIENTE", 0L); c.ejecutar(2, 1, "EN_PROCESO", null);
+        c.ejecutar(2, 1, "COMPLETADA", 0L); c.ejecutar(2, 1, "PENDIENTE", 1L); c.ejecutar(2, 1, "EN_PROCESO", 2L);
         assertEquals(EstadoTarea.EN_PROCESO, t.t.estado()); assertEquals(3, t.guardados);
     }
     @Test void sinVersion_esEntradaInvalida_sinGuardarNiNotificar() {                    // II-03 I1: la versión es obligatoria
