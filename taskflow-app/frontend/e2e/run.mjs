@@ -112,6 +112,21 @@ await caso('E2E-15 XSS: un título con HTML malicioso se muestra como texto y no
   assert.equal(await page.locator('img[src="x"]').count(), 0, 'el título se interpretó como HTML');
 });
 
+await caso('E2E-16 API dormida: el registro responde 500 tras crear la cuenta y la interfaz entra sin pedir repetirlo', async (page) => {
+  await api('POST', '/api/test/frio');
+  await page.goto(BASE); await page.getByRole('tab', { name: 'Registrarse' }).click();
+  await page.getByLabel('Nombre').fill('Nueva Persona'); await page.getByLabel('Correo electrónico').fill('nueva@x.co'); await page.getByLabel('Contraseña').fill('clave123');
+  await page.getByRole('button', { name: 'Crear cuenta' }).click();
+  await page.getByRole('navigation').waitFor();   // entró con la cuenta creada en el primer intento
+});
+await caso('E2E-17 un correo ya registrado con otra contraseña informa «ya registrado» sin entrar', async (page) => {
+  await page.goto(BASE); await page.getByRole('tab', { name: 'Registrarse' }).click();
+  await page.getByLabel('Nombre').fill('Otra'); await page.getByLabel('Correo electrónico').fill('admin@gmail.com'); await page.getByLabel('Contraseña').fill('otraclave1');
+  await page.getByRole('button', { name: 'Crear cuenta' }).click();
+  await page.getByRole('alert').waitFor(); assert.match(await page.getByRole('alert').innerText(), /ya está registrado/);
+  assert.equal(await page.getByRole('navigation').count(), 0, 'no debe entrar con una contraseña ajena');
+});
+
 await browser.close(); srv.kill();
 const ok = resultados.filter((r) => r[1]).length;
 console.log(`\nResultado: ${ok}/${resultados.length} pruebas de extremo a extremo aprobadas`);
