@@ -88,7 +88,6 @@ class TareaReglasTest {
         llamar("PATCH", "/api/tareas/" + tareaId + "/estado", carlos, Map.of("estado", "COMPLETADA"), 404);
     }
 
-    @Test
     /** II-04: dos escrituras que compiten por la misma tarea con la misma versión: una gana (200) y la otra recibe 409. */
     @Test
     void dosCambiosConcurrentes_conLaMismaVersion_uno200_y_uno409_sinAvisoDuplicado() throws Exception {
