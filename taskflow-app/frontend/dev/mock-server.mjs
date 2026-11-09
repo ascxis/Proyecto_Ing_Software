@@ -58,16 +58,20 @@ const body = (req) => new Promise((r) => { let d = ''; req.on('data', (c) => (d 
 const ESTADOS = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADA'];
 const NOMBRE_ESTADO = { PENDIENTE: 'pendiente', EN_PROCESO: 'en proceso', COMPLETADA: 'completada' };
 
+let frio = false;   // simula la API dormida: el siguiente registro crea la cuenta pero responde 500
 async function api(req, res, url) {
   const m = req.method, p = url.pathname, seg = p.split('/').filter(Boolean); // api, recurso, ...
-  if (p === '/api/test/reset' && m === 'POST') { seed(); return send(res, 204); }
+  if (p === '/api/test/reset' && m === 'POST') { seed(); frio = false; return send(res, 204); }
+  if (p === '/api/test/frio' && m === 'POST') { frio = true; return send(res, 204); }
   if (p === '/api/auth/register' && m === 'POST') {
     const b = await body(req);
     if (!/^\S+@\S+\.\S+$/.test(b.correo || '')) return err(res, 400, 'Correo inválido');
     if ((b.clave || '').length < 6) return err(res, 400, 'La contraseña debe tener al menos 6 caracteres');
     if (db.usuarios.some((u) => u.correo.toLowerCase() === b.correo.toLowerCase())) return err(res, 409, 'El correo ya está registrado');
     const u = { id: nid('u'), nombre: b.nombre || b.correo.split('@')[0], correo: b.correo, clave: hash(b.clave), cargo: 'Miembro' };
-    db.usuarios.push(u); return send(res, 201, { token: sign(u), usuario: pub(u) });
+    db.usuarios.push(u);
+    if (frio) { frio = false; return err(res, 500, 'Error interno'); }
+    return send(res, 201, { token: sign(u), usuario: pub(u) });
   }
   if (p === '/api/auth/login' && m === 'POST') {
     const b = await body(req); const u = db.usuarios.find((x) => x.correo.toLowerCase() === (b.correo || '').toLowerCase());

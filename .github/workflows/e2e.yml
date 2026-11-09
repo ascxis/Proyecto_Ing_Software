@@ -35,5 +35,5 @@ jobs:
         run: |
           set -o pipefail
           npm run test:e2e | tee e2e-resultado.txt
-      - name: Todas las pruebas deben pasar (15 casos)
-        run: 'grep -q "Resultado: 15/15" e2e-resultado.txt'
+      - name: Todas las pruebas deben pasar (17 casos)
+        run: 'grep -q "Resultado: 17/17" e2e-resultado.txt'
