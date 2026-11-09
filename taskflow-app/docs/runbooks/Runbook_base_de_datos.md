@@ -67,7 +67,7 @@ Compruebe también que un usuario creado antes del incidente puede iniciar sesi�
 ## 5. Si hay sospecha de pérdida o corrupción de datos (sin probar)
 1. `docker compose stop api web` (detener la escritura).
 2. Copie el volumen antes de cualquier reparación: `docker run --rm -v taskflow-app_pgdata:/data -v "$PWD":/copia alpine tar czf /copia/pgdata-incidente.tar.gz -C /data .` (el nombre del volumen puede variar: `docker volume ls`).
-3. Restaure el último respaldo lógico si existe. **Aún no hay respaldos automáticos configurados**: es una deuda registrada (ver roadmap, FPI-31).
+3. Restaure el último respaldo lógico si existe. La restauración está ensayada en CI sobre una base efímera (`respaldo.yml`, ejecución 42532331664); **no hay respaldos programados de la base de Render**: deuda abierta (ROADMAP hito 2, FPI-31). Haga un `pg_dump` manual antes de cualquier cambio en producción.
 
 ## 6. Escalamiento (persona única)
 | Tiempo sin resolver | Acción |
