@@ -30,7 +30,6 @@ export function Login({ onLogin }: { onLogin: (u: Usuario) => void }) {
           {error && <div role="alert" className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">{error}</div>}
           <button className={`${boton} w-full`}>{registro ? 'Crear cuenta' : 'Iniciar sesión'}</button>
         </form>
-        {!registro && <div className="mt-5 p-3 bg-blue-50 rounded-xl text-xs text-blue-800"><b>Credenciales de prueba:</b> admin@gmail.com / admin123</div>}
       </div>
     </div>
   );
