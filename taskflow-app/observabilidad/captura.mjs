@@ -2,7 +2,7 @@
 import { chromium } from 'playwright';
 const URL = process.argv[2], SALIDA = process.argv[3] || '/tmp/dashboard.png';
 const navegador = await chromium.launch();
-const page = await navegador.newPage({ viewport: { width: 1500, height: 900 } });
+const page = await navegador.newPage({ viewport: { width: 1500, height: 900 }, locale: 'en-US', timezoneId: 'America/Bogota' });   // sin un locale válido Grafana lanza «Incorrect locale information provided»
 const fallos = [];
 page.on('requestfailed', (r) => fallos.push(`FALLÓ ${r.url()} ${r.failure()?.errorText}`));
 page.on('response', (r) => { if (r.status() >= 400) fallos.push(`HTTP ${r.status()} ${r.url()}`); });
