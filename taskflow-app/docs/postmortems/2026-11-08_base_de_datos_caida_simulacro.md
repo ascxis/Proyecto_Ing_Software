@@ -32,5 +32,5 @@ Se supuso que la persona detuvo la base de datos por mantenimiento. Lo que permi
 | Acción | Estado |
 |---|---|
 | Responder 503 con mensaje claro cuando falla la base y bajar el tiempo de espera del pool a 5 s | **Hecha y verificada** (PR #23). Repetido el simulacro (ejecución 42512144476): el login durante el incidente devuelve **503** (antes 500) y el servicio queda sano a los **11 s** (antes 63 s); login posterior 200 |
-| Regla de alerta en Prometheus por tasa de 5xx | Pendiente (requiere Alertmanager y un canal de aviso) |
-| Respaldos automáticos de la base de datos | Pendiente (deuda registrada en el roadmap) |
+| Regla de alerta en Prometheus por tasa de 5xx | Parcial: la regla existe (PR #27), pero sin Alertmanager ni canal de aviso no notifica a nadie |
+| Respaldos automáticos de la base de datos | Parcial: restauración ensayada en CI (`respaldo.yml`, ejecución 42532331664, base efímera); siguen sin programarse respaldos de la base de Render (ROADMAP hito 2) |

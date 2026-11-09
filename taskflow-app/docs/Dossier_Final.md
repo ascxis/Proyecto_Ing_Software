@@ -70,8 +70,8 @@ El inventario completo y el roadmap están en [ROADMAP.md](ROADMAP.md).
 - La usabilidad no se midió (requiere al menos 5 personas).
 - Las cifras de rendimiento son sintéticas, medidas en el servidor de CI; el costo de la alternativa distribuida y la retención de datos de observabilidad son estimaciones.
 - No se midió el efecto de la telemetría sobre la latencia.
-- No hay alerta automática de 5xx ni respaldos implementados.
-- Pruebas E2E y de XSS no automatizadas; N6 (PATCH de edición sin validar título en blanco) sin confirmar.
+- La regla de alerta de 5xx existe (PR #27) pero sin Alertmanager ni canal de aviso; la restauración de respaldos está ensayada en CI (`respaldo.yml`), pero no hay respaldos programados de la base de Render.
+- Las pruebas E2E y la de XSS corren en CI (PR #28) contra un servidor simulado, no contra la API real; N6 (título en blanco al editar) se corrigió en el PR #26 y N7 (fecha límite) en el PR #32.
 
 ## 8. Lecciones aprendidas
 
