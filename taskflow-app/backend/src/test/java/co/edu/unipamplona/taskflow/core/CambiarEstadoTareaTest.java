@@ -51,17 +51,25 @@ class CambiarEstadoTareaTest {
     }
     @Test void repetirElMismoEstado_noGuardaNiNotifica() {
         var t = new TareasMem(); var n = new NotifMem();
-        new CambiarEstadoTarea(t, n).ejecutar(2, 1, "PENDIENTE", null);
+        new CambiarEstadoTarea(t, n).ejecutar(2, 1, "PENDIENTE", 0L);
         assertEquals(0, t.guardados); assertTrue(n.enviados.isEmpty());
     }
     @Test void creadorQueCambiaElEstado_noSeAutonotifica() {
         var t = new TareasMem(); t.t = new TareaVista(1, "X", 1L, "Creador", 1L, EstadoTarea.PENDIENTE, 0);
-        var n = new NotifMem(); new CambiarEstadoTarea(t, n).ejecutar(1, 1, "COMPLETADA", null);
+        var n = new NotifMem(); new CambiarEstadoTarea(t, n).ejecutar(1, 1, "COMPLETADA", 0L);
         assertTrue(n.enviados.isEmpty());
     }
     @Test void transicionesLibresEntreLosTresEstados() {                                // RN-09
         var t = new TareasMem(); var c = new CambiarEstadoTarea(t, new NotifMem());
-        c.ejecutar(2, 1, "COMPLETADA", null); c.ejecutar(2, 1, "PENDIENTE", null); c.ejecutar(2, 1, "EN_PROCESO", null);
+        c.ejecutar(2, 1, "COMPLETADA", null); c.ejecutar(2, 1, "PENDIENTE", 0L); c.ejecutar(2, 1, "EN_PROCESO", null);
         assertEquals(EstadoTarea.EN_PROCESO, t.t.estado()); assertEquals(3, t.guardados);
+    }
+    @Test void sinVersion_esEntradaInvalida_sinGuardarNiNotificar() {                    // II-03 I1: la versión es obligatoria
+        var t = new TareasMem(); var n = new NotifMem();
+        assertEquals(ReglaNegocioException.Tipo.ENTRADA_INVALIDA, error(() -> new CambiarEstadoTarea(t, n).ejecutar(2, 1, "EN_PROCESO", null)));
+        assertEquals(0, t.guardados); assertTrue(n.enviados.isEmpty());
+    }
+    @Test void sinVersion_peroNoAsignado_siguiendoSiendoProhibido() {                    // no se revela nada por omitir la versión
+        assertEquals(ReglaNegocioException.Tipo.PROHIBIDO, error(() -> new CambiarEstadoTarea(new TareasMem(), new NotifMem()).ejecutar(1, 1, "EN_PROCESO", null)));
     }
 }

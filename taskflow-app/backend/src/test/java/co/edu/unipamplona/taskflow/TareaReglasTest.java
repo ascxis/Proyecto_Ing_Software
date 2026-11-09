@@ -89,6 +89,13 @@ class TareaReglasTest {
     }
 
     @Test
+    void sinVersion_recibe400_y_el_estado_no_cambia() throws Exception {              // II-03 I1
+        llamar("PATCH", "/api/tareas/" + tareaId + "/estado", beto, Map.of("estado", "COMPLETADA"), 400);
+        JsonNode lista = llamar("GET", "/api/tareas", beto, null, 200);
+        assertEquals("PENDIENTE", lista.get(0).get("estado").asText());
+    }
+
+    @Test
     void estadoInvalido_recibe400() throws Exception {
         llamar("PATCH", "/api/tareas/" + tareaId + "/estado", beto, Map.of("estado", "TERMINADA"), 400);
     }
