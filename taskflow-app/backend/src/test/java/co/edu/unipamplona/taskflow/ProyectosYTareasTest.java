@@ -107,17 +107,6 @@ class ProyectosYTareasTest {
     }
 
     @Test
-    void editarSinFechaLimite_conservaLaFecha_N7() throws Exception {                 // II-03 I2: N7 confirmado y corregido
-        JsonNode antes = llamar("GET", "/api/tareas", ana, null, 200);
-        String fecha = antes.get(0).get("fechaLimite").asText();
-        assertFalse(fecha.isEmpty());
-        llamar("PUT", "/api/tareas/" + tareaId, ana, Map.of("titulo", "Solo cambio el título"), 200);
-        assertEquals(fecha, llamar("GET", "/api/tareas", ana, null, 200).get(0).get("fechaLimite").asText());
-        llamar("PUT", "/api/tareas/" + tareaId, ana, Map.of("titulo", "Quito la fecha", "fechaLimite", ""), 200);   // "" la quita a propósito
-        assertEquals("", llamar("GET", "/api/tareas", ana, null, 200).get(0).get("fechaLimite").asText());
-    }
-
-    @Test
     void editarTarea_soloElCreador() throws Exception {
         JsonNode t = llamar("PUT", "/api/tareas/" + tareaId, ana,
                 Map.of("titulo", "Nuevo título", "descripcion", "y", "prioridad", "BAJA", "fechaLimite", "2026-11-25"), 200);

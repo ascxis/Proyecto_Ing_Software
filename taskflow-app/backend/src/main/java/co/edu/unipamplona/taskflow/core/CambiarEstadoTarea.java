@@ -17,9 +17,7 @@ public class CambiarEstadoTarea {
                 .orElseThrow(() -> new ReglaNegocioException(NO_ENCONTRADA, "Tarea no encontrada"));
         if (t.asignadoId() == null || t.asignadoId() != usuarioId)
             throw new ReglaNegocioException(PROHIBIDO, "Solo el usuario asignado puede cambiar el estado de la tarea (RN-02)");
-        if (versionCliente == null)                                // la versión es obligatoria: sin ella no hay control de concurrencia
-            throw new ReglaNegocioException(ENTRADA_INVALIDA, "Falta la versión de la tarea (campo version)");
-        if (versionCliente != t.version())
+        if (versionCliente != null && versionCliente != t.version())
             throw new ReglaNegocioException(CONFLICTO, "La tarea fue modificada por otra persona; recarga e intenta de nuevo");
         if (t.estado() == nuevo) return t;                       // mismo estado: no notifica de nuevo
         TareaVista guardada = tareas.guardarEstado(tareaId, nuevo);

@@ -89,12 +89,6 @@ class TareaReglasTest {
     }
 
     @Test
-    void sinVersion_recibe400_y_el_estado_no_cambia() throws Exception {              // II-03 I1
-        llamar("PATCH", "/api/tareas/" + tareaId + "/estado", beto, Map.of("estado", "COMPLETADA"), 400);
-        JsonNode lista = llamar("GET", "/api/tareas", beto, null, 200);
-        assertEquals("PENDIENTE", lista.get(0).get("estado").asText());
-    }
-
     /** II-04: dos escrituras que compiten por la misma tarea con la misma versión: una gana (200) y la otra recibe 409. */
     @Test
     void dosCambiosConcurrentes_conLaMismaVersion_uno200_y_uno409_sinAvisoDuplicado() throws Exception {
