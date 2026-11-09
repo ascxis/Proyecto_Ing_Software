@@ -123,9 +123,9 @@ jobs:
           echo "Memoria de los contenedores:"; docker stats --no-stream --format '  {{.Name}}: {{.MemUsage}}' 
       - name: Captura del dashboard
         run: |
-          npx -y playwright@1.49.1 install --with-deps chromium >/dev/null 2>&1
-          npx -y playwright@1.49.1 screenshot --viewport-size=1500,900 --wait-for-timeout=15000 \
-            "http://localhost:3001/d/taskflow-endpoint/x?orgId=1&from=now-6m&to=now&kiosk" /tmp/dashboard.png
+          mkdir /tmp/pw && cp observabilidad/captura.mjs /tmp/pw/ && cd /tmp/pw && npm init -y >/dev/null && npm i playwright@1.49.1 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          node captura.mjs "http://localhost:3001/d/taskflow-endpoint/x?orgId=1&from=now-6m&to=now&kiosk" /tmp/dashboard.png
       - uses: actions/upload-artifact@v4
         if: always()
         with:

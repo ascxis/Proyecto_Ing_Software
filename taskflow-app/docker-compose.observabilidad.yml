@@ -30,6 +30,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Defina GRAFANA_PASSWORD en el archivo .env}
       GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_ANONIMO:-false}
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SERVER_ROOT_URL: http://localhost:3001/   # el puerto publicado; con el valor por defecto (3000) los archivos de la interfaz se piden a la app
     volumes:
       - ./observabilidad/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./observabilidad/grafana/dashboards:/var/lib/grafana/dashboards:ro
