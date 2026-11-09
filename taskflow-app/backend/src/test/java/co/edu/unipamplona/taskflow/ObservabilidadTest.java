@@ -46,7 +46,7 @@ class ObservabilidadTest {
         double invalidosAntes = metricas.counter("taskflow.cambios.estado", "resultado", "entrada_invalida", "estado", "INVALIDO").count();
         double antes = metricas.counter("taskflow.cambios.estado", "resultado", "ok", "estado", "EN_PROCESO").count();
         var ok = mvc.perform(patch("/api/tareas/" + tarea.get("id").asText() + "/estado").header("Authorization", "Bearer " + t)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":\"EN_PROCESO\"}")).andReturn().getResponse();
+                .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":\"EN_PROCESO\",\"version\":0}")).andReturn().getResponse();
         assertEquals(200, ok.getStatus());
         assertEquals(antes + 1, metricas.counter("taskflow.cambios.estado", "resultado", "ok", "estado", "EN_PROCESO").count());
         var malo = mvc.perform(patch("/api/tareas/" + tarea.get("id").asText() + "/estado").header("Authorization", "Bearer " + t)

@@ -279,7 +279,7 @@ components:
       required: [estado, version]
       properties:
         estado: { type: string, enum: [PENDIENTE, EN_PROCESO, COMPLETADA] }
-        version: { type: integer, format: int64, description: Versión de la tarea que vio el cliente; obligatoria (400 si falta, 409 si está obsoleta) }
+        version: { type: integer, format: int64, description: 'Versión de la tarea que vio el cliente. Obligatoria: 400 si falta, 409 si está obsoleta' }
     NotificacionDto:
       type: object
       properties: { id: { type: string }, mensaje: { type: string }, fecha: { type: integer, format: int64 }, leida: { type: boolean } }
